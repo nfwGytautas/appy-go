@@ -1,16 +1,16 @@
 package appy
 
-type nilJobSchedulerProvider struct{}
+type nilJobScheduler struct{}
 
-func (n *nilJobSchedulerProvider) Initialize(*Appy, JobSchedulerOptions) error {
+func (n *nilJobScheduler) Initialize(*Appy, JobSchedulerOptions) error {
 	return nil
 }
 
-func (n *nilJobSchedulerProvider) Add(options JobOptions) {
+func (n *nilJobScheduler) Add(options JobOptions) {
 }
 
-func (n *nilJobSchedulerProvider) Start() {
+func (n *nilJobScheduler) Start() {
 }
 
-func (n *nilJobSchedulerProvider) Stop() {
+func (n *nilJobScheduler) Stop() {
 }

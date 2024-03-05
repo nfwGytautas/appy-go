@@ -1,13 +1,19 @@
 package appy
 
-// HttpServer is the main struct for appy http interface
-type HttpServer struct {
-	provider HttpProvider
+import "net/http"
+
+// The HttpProvider interface is used to define the methods that are required for a http server, these are implemented by drivers
+type HttpServer interface {
+	Initialize(*Appy, HttpOptions) error
+	Run() error
+
+	// Get the root group for the http server i.e. /
+	RootGroup() HttpEndpointGroup
 }
 
 // Options when creating a new http server
 type HttpOptions struct {
-	Provider HttpProvider
+	Provider HttpServer
 
 	ErrorMapper HttpErrorMapper
 
@@ -22,15 +28,6 @@ type HttpOptions struct {
 type SSLSettings struct {
 	CertFile string
 	KeyFile  string
-}
-
-// The HttpProvider interface is used to define the methods that are required for a http server, these are implemented by drivers
-type HttpProvider interface {
-	Initialize(*Appy, HttpOptions) error
-	Run() error
-
-	// Get the root group for the http server i.e. /
-	RootGroup() HttpEndpointGroup
 }
 
 // HttpEndpointGroup is used to group http methods together
@@ -54,6 +51,9 @@ type HttpContext struct {
 	App   *Appy
 	Query QueryParameterParser
 	Path  PathParameterParser
+
+	Writer  http.ResponseWriter
+	Request *http.Request
 }
 
 // A result of a http request
@@ -80,10 +80,6 @@ type HttpErrorMapper interface {
 	Map(error) HttpResult
 }
 
-func (hs *HttpServer) RootGroup() HttpEndpointGroup {
-	return hs.provider.RootGroup()
-}
-
 func (c *HttpContext) Nil() HttpResult {
 	return HttpResult{
 		failed: false,
@@ -94,6 +90,7 @@ func (c *HttpContext) Ok(statusCode int, body interface{}) HttpResult {
 	return HttpResult{
 		StatusCode: statusCode,
 		Body:       body,
+		failed:     false,
 	}
 }
 

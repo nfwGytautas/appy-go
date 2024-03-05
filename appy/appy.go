@@ -16,10 +16,13 @@ type Appy struct {
 	Logger Logger
 
 	// Server for appy, if this is null no endpoints will be available
-	http *HttpServer
+	http HttpServer
 
 	// Scheduler for timed jobs to run in the background
-	jobs *JobScheduler
+	jobs JobScheduler
+
+	// If there is a need for websocket support a factory needs to be specified
+	sockets WebsocketFactory
 }
 
 // Options to pass when creating an appy
@@ -28,6 +31,7 @@ type AppyOptions struct {
 	Logger      LoggerOptions
 	HTTP        *HttpOptions
 	Jobs        *JobSchedulerOptions
+	Sockets     *WebsocketFactoryOptions
 }
 
 // New creates a new instance of the appy application
@@ -37,18 +41,13 @@ func New(options AppyOptions) (*Appy, error) {
 	app.Environment = options.Environment
 
 	// Logger
-	app.Logger = Logger{
-		Name:     options.Logger.Name,
-		provider: options.Logger.Provider,
-	}
+	app.Logger = options.Logger.Provider
 
 	// Http
 	if options.HTTP != nil {
-		app.http = &HttpServer{
-			provider: options.HTTP.Provider,
-		}
+		app.http = options.HTTP.Provider
 
-		err := app.http.provider.Initialize(app, *options.HTTP)
+		err := app.http.Initialize(app, *options.HTTP)
 		if err != nil {
 			return nil, err
 		}
@@ -56,11 +55,19 @@ func New(options AppyOptions) (*Appy, error) {
 
 	// Jobs
 	if options.Jobs != nil {
-		app.jobs = &JobScheduler{
-			provider: options.Jobs.Provider,
-		}
+		app.jobs = options.Jobs.Provider
 
-		err := app.jobs.provider.Initialize(app, *options.Jobs)
+		err := app.jobs.Initialize(app, *options.Jobs)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Sockets
+	if options.Sockets != nil {
+		app.sockets = options.Sockets.Provider
+
+		err := app.sockets.Initialize(app, *options.Sockets)
 		if err != nil {
 			return nil, err
 		}
@@ -81,7 +88,7 @@ func (a *Appy) Run() error {
 
 	if a.http != nil {
 		a.Logger.Debug("Starting http server")
-		return a.http.provider.Run()
+		return a.http.Run()
 	}
 
 	// No http server check other conditions for running
@@ -95,12 +102,10 @@ func (a *Appy) HasHttp() bool {
 	return a.http != nil
 }
 
-func (a *Appy) Http() *HttpServer {
+func (a *Appy) Http() HttpServer {
 	if a.http == nil && !a.Environment.FailOnInvalidService {
 		a.Logger.Warn("No http server available, returning nil provider")
-		return &HttpServer{
-			provider: &nilHttpProvider{},
-		}
+		return &nilHttpServer{}
 	}
 
 	return a.http
@@ -110,15 +115,26 @@ func (a *Appy) HasJobs() bool {
 	return a.jobs != nil
 }
 
-func (a *Appy) Jobs() *JobScheduler {
+func (a *Appy) Jobs() JobScheduler {
 	if a.jobs == nil && !a.Environment.FailOnInvalidService {
 		a.Logger.Warn("No job scheduler available, returning nil provider")
-		return &JobScheduler{
-			provider: &nilJobSchedulerProvider{},
-		}
+		return &nilJobScheduler{}
 	}
 
 	return a.jobs
+}
+
+func (a *Appy) HasSockets() bool {
+	return a.sockets != nil
+}
+
+func (a *Appy) Sockets() WebsocketFactory {
+	if a.sockets == nil && !a.Environment.FailOnInvalidService {
+		a.Logger.Warn("No websocket factory available, returning nil provider")
+		return &nilWebsocketFactory{}
+	}
+
+	return a.sockets
 }
 
 func (a *Appy) waitForSignal() {

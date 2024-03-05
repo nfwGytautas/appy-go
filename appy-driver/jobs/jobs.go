@@ -8,7 +8,7 @@ import (
 	"github.com/nfwGytautas/appy"
 )
 
-type jobSchedulerProvider struct {
+type jobScheduler struct {
 	sync.RWMutex
 
 	app     *appy.Appy
@@ -28,14 +28,14 @@ type job struct {
 	tick         time.Duration
 }
 
-func NewScheduler() appy.JobSchedulerProvider {
-	return &jobSchedulerProvider{
+func NewScheduler() appy.JobScheduler {
+	return &jobScheduler{
 		started: false,
 		stop:    make(chan bool),
 	}
 }
 
-func (n *jobSchedulerProvider) Initialize(app *appy.Appy, options appy.JobSchedulerOptions) error {
+func (n *jobScheduler) Initialize(app *appy.Appy, options appy.JobSchedulerOptions) error {
 	if options.PoolTick < 1 {
 		return errors.New("pool tick must be greater than 0")
 	}
@@ -45,7 +45,7 @@ func (n *jobSchedulerProvider) Initialize(app *appy.Appy, options appy.JobSchedu
 	return nil
 }
 
-func (n *jobSchedulerProvider) Add(options appy.JobOptions) {
+func (n *jobScheduler) Add(options appy.JobOptions) {
 	if options.Persistent && n.started {
 		n.app.Logger.Error("Cannot add a persistent job to a started scheduler")
 		return
@@ -76,7 +76,7 @@ func (n *jobSchedulerProvider) Add(options appy.JobOptions) {
 	}
 }
 
-func (n *jobSchedulerProvider) Start() {
+func (n *jobScheduler) Start() {
 	ticker := time.NewTicker(n.poolTick)
 
 	for {
@@ -89,11 +89,11 @@ func (n *jobSchedulerProvider) Start() {
 	}
 }
 
-func (n *jobSchedulerProvider) Stop() {
+func (n *jobScheduler) Stop() {
 	n.stop <- true
 }
 
-func (n *jobSchedulerProvider) handleTick() {
+func (n *jobScheduler) handleTick() {
 	n.Lock()
 	defer n.Unlock()
 

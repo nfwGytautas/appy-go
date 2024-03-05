@@ -16,7 +16,7 @@ type ConsoleLogger struct {
 }
 
 // A very simple console logging provider, mainly to be used for debugging or a quick setup
-func ConsoleProvider() appy.LoggerProvider {
+func ConsoleProvider() appy.Logger {
 	return &ConsoleLogger{}
 }
 

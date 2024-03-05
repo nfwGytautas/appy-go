@@ -7,14 +7,12 @@ import (
 )
 
 // GIN powered http provider for appy
-type ginHttpProvider struct {
-	engine *gin.Engine
-	app    *appy.Appy
+type ginHttpServer struct {
+	engine  *gin.Engine
+	app     *appy.Appy
+	options appy.HttpOptions
 
-	address   string
 	rootGroup *gin.RouterGroup
-	ssl       *appy.SSLSettings
-	mapper    appy.HttpErrorMapper
 }
 
 type ginQueryParser struct {
@@ -26,42 +24,40 @@ type ginPathParser struct {
 }
 
 // Create a new appy HttpProvider
-func Provider() appy.HttpProvider {
-	return &ginHttpProvider{}
+func Provider() appy.HttpServer {
+	return &ginHttpServer{}
 }
 
-func (g *ginHttpProvider) Initialize(app *appy.Appy, options appy.HttpOptions) error {
+func (g *ginHttpServer) Initialize(app *appy.Appy, options appy.HttpOptions) error {
 	if !app.Environment.DebugMode {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
 	g.engine = gin.Default()
 	g.engine.Use(cors.Default())
-	g.address = options.Address
-	g.ssl = options.SSL
 	g.app = app
-	g.mapper = options.ErrorMapper
+	g.options = options
 
 	g.rootGroup = g.engine.Group("/")
 
-	if g.mapper == nil {
-		g.mapper = &defaultErrorMapper{}
+	if g.options.ErrorMapper == nil {
+		g.options.ErrorMapper = &defaultErrorMapper{}
 	}
 
 	return nil
 }
 
-func (g *ginHttpProvider) Run() error {
-	if g.ssl != nil {
+func (g *ginHttpServer) Run() error {
+	if g.options.SSL != nil {
 		g.app.Logger.Debug("Running HTTPS")
-		return g.engine.RunTLS(g.address, g.ssl.CertFile, g.ssl.KeyFile)
+		return g.engine.RunTLS(g.options.Address, g.options.SSL.CertFile, g.options.SSL.KeyFile)
 	}
 
 	g.app.Logger.Debug("Running HTTP")
-	return g.engine.Run(g.address)
+	return g.engine.Run(g.options.Address)
 }
 
-func (g *ginHttpProvider) RootGroup() appy.HttpEndpointGroup {
+func (g *ginHttpServer) RootGroup() appy.HttpEndpointGroup {
 	return &ginHttpEndpointGroup{
 		provider: g,
 		group:    g.rootGroup,

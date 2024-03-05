@@ -1,20 +1,20 @@
 package appy
 
-type nilHttpProvider struct {
+type nilHttpServer struct {
 }
 
 type nilHttpEndpointGroup struct {
 }
 
-func (n *nilHttpProvider) Initialize(*Appy, HttpOptions) error {
+func (n *nilHttpServer) Initialize(*Appy, HttpOptions) error {
 	return nil
 }
 
-func (n *nilHttpProvider) Run() error {
+func (n *nilHttpServer) Run() error {
 	return nil
 }
 
-func (n *nilHttpProvider) RootGroup() HttpEndpointGroup {
+func (n *nilHttpServer) RootGroup() HttpEndpointGroup {
 	return &nilHttpEndpointGroup{}
 }
 

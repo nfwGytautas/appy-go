@@ -6,7 +6,7 @@ import (
 )
 
 type ginHttpEndpointGroup struct {
-	provider *ginHttpProvider
+	provider *ginHttpServer
 	group    *gin.RouterGroup
 }
 
@@ -61,6 +61,8 @@ func (g *ginHttpEndpointGroup) appyCtx(c *gin.Context) appy.HttpContext {
 		Path: &ginPathParser{
 			ctx: c,
 		},
+		Writer:  c.Writer,
+		Request: c.Request,
 	}
 }
 
@@ -75,7 +77,7 @@ func (g *ginHttpEndpointGroup) handleResult(c *gin.Context, res appy.HttpResult)
 	// Unexpected error
 	if res.HasError() {
 		// Try and map the error from the error map
-		res = g.provider.mapper.Map(res.Error)
+		res = g.provider.options.ErrorMapper.Map(res.Error)
 		failed = true
 	}
 

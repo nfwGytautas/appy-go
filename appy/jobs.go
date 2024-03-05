@@ -2,18 +2,7 @@ package appy
 
 import "time"
 
-type JobScheduler struct {
-	provider JobSchedulerProvider
-}
-
-type JobSchedulerOptions struct {
-	Provider JobSchedulerProvider
-
-	// The duration to wait before executing another cycle of job pool checks
-	PoolTick time.Duration
-}
-
-type JobSchedulerProvider interface {
+type JobScheduler interface {
 	Initialize(*Appy, JobSchedulerOptions) error
 
 	// Add a new job to the scheduler of the specified duration
@@ -24,6 +13,13 @@ type JobSchedulerProvider interface {
 
 	// Stop job execution
 	Stop()
+}
+
+type JobSchedulerOptions struct {
+	Provider JobScheduler
+
+	// The duration to wait before executing another cycle of job pool checks
+	PoolTick time.Duration
 }
 
 type JobOptions struct {
@@ -41,11 +37,3 @@ type JobOptions struct {
 }
 
 type Job func(Appy)
-
-func (js *JobScheduler) Start() {
-	js.provider.Start()
-}
-
-func (js *JobScheduler) Add(job JobOptions) {
-	js.provider.Add(job)
-}
