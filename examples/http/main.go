@@ -5,8 +5,7 @@ import (
 	"net/http"
 
 	"github.com/nfwGytautas/appy"
-	appy_driver_http "github.com/nfwGytautas/appy/http"
-	appy_driver_logger "github.com/nfwGytautas/appy/logger"
+	appy_default_drivers "github.com/nfwGytautas/appy/defaults"
 )
 
 func main() {
@@ -14,10 +13,10 @@ func main() {
 		Environment: appy.DefaultEnvironment(),
 		Logger: appy.LoggerOptions{
 			Name:     "Appy",
-			Provider: appy_driver_logger.ConsoleProvider(),
+			Provider: appy_default_drivers.DefaultLogger(),
 		},
 		HTTP: &appy.HttpOptions{
-			Provider: appy_driver_http.Provider(),
+			Provider: appy_default_drivers.DefaultHttpServer(),
 			Address:  "127.0.0.1:8080",
 			SSL:      nil, // HTTP
 		},
