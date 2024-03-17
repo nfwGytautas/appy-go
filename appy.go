@@ -41,6 +41,10 @@ func New(options AppyOptions) (*Appy, error) {
 	app.Environment = options.Environment
 
 	// Logger
+	if options.Logger.Provider == nil {
+		return nil, ErrNoLogger
+	}
+
 	app.Logger = options.Logger.Provider
 
 	// Http
