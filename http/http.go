@@ -1,4 +1,4 @@
-package driver_gin
+package appy_driver_http
 
 import (
 	"github.com/gin-contrib/cors"

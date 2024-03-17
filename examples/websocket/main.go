@@ -2,25 +2,25 @@ package main
 
 import (
 	"github.com/nfwGytautas/appy"
-	driver_gin "github.com/nfwGytautas/appy-driver/http"
-	driver_logger "github.com/nfwGytautas/appy-driver/logger"
-	driver_websocket "github.com/nfwGytautas/appy-driver/websocket"
+	appy_driver_http "github.com/nfwGytautas/appy/http"
+	appy_driver_logger "github.com/nfwGytautas/appy/logger"
+	appy_driver_websocket "github.com/nfwGytautas/appy/websocket"
 )
 
 func main() {
 	options := appy.AppyOptions{
 		Environment: appy.DefaultEnvironment(),
 		Logger: appy.LoggerOptions{
-			Provider: driver_logger.ConsoleProvider(),
+			Provider: appy_driver_logger.ConsoleProvider(),
 			Name:     "Appy",
 		},
 		HTTP: &appy.HttpOptions{
-			Provider: driver_gin.Provider(),
+			Provider: appy_driver_http.Provider(),
 			Address:  "127.0.0.1:8080",
 			SSL:      nil, // HTTP
 		},
 		Sockets: &appy.WebsocketFactoryOptions{
-			Provider: driver_websocket.Factory(),
+			Provider: appy_driver_websocket.Factory(),
 		},
 	}
 

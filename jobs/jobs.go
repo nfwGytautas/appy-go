@@ -1,4 +1,4 @@
-package driver_jobs
+package appy_driver_jobs
 
 import (
 	"errors"

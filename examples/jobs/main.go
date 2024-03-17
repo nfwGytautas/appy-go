@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/nfwGytautas/appy"
-	driver_jobs "github.com/nfwGytautas/appy-driver/jobs"
-	driver_logger "github.com/nfwGytautas/appy-driver/logger"
+	appy_driver_jobs "github.com/nfwGytautas/appy/jobs"
+	appy_driver_logger "github.com/nfwGytautas/appy/logger"
 )
 
 func main() {
@@ -13,10 +13,10 @@ func main() {
 		Environment: appy.DefaultEnvironment(),
 		Logger: appy.LoggerOptions{
 			Name:     "Appy",
-			Provider: driver_logger.ConsoleProvider(),
+			Provider: appy_driver_logger.ConsoleProvider(),
 		},
 		Jobs: &appy.JobSchedulerOptions{
-			Provider: driver_jobs.NewScheduler(),
+			Provider: appy_driver_jobs.NewScheduler(),
 			PoolTick: 1 * time.Second,
 		},
 	}

@@ -11,10 +11,16 @@ type HttpServer interface {
 	RootGroup() HttpEndpointGroup
 }
 
+// Utility struct for mapping errors to http responses
+type HttpErrorMapper interface {
+	Map(error) HttpResult
+}
+
 // Options when creating a new http server
 type HttpOptions struct {
 	Provider HttpServer
 
+	// Error mapper
 	ErrorMapper HttpErrorMapper
 
 	// The address to bind the server to
@@ -74,11 +80,6 @@ type PathParameterParser interface{}
 // This is a middleware function that can be used to add functionality that runs before the main handler,
 // if the returned result is not Nil it will be passed down the chain
 type HttpMiddleware func(c HttpContext) HttpResult
-
-// Utility struct for mapping errors to http responses
-type HttpErrorMapper interface {
-	Map(error) HttpResult
-}
 
 func (c *HttpContext) Nil() HttpResult {
 	return HttpResult{
