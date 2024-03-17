@@ -15,14 +15,6 @@ type ginHttpServer struct {
 	rootGroup *gin.RouterGroup
 }
 
-type ginQueryParser struct {
-	ctx *gin.Context
-}
-
-type ginPathParser struct {
-	ctx *gin.Context
-}
-
 // Create a new appy HttpProvider
 func Provider() appy.HttpServer {
 	return &ginHttpServer{}

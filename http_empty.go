@@ -1,5 +1,7 @@
 package appy
 
+import "net/http"
+
 type nilHttpServer struct {
 }
 
@@ -22,10 +24,22 @@ func (n *nilHttpEndpointGroup) Subgroup(string) HttpEndpointGroup {
 	return &nilHttpEndpointGroup{}
 }
 
-func (n *nilHttpEndpointGroup) Use(HttpMiddleware) {
+func (n *nilHttpEndpointGroup) Pre(HttpMiddleware) {
+}
+
+func (n *nilHttpEndpointGroup) Post(HttpMiddleware) {
+}
+
+func (n *nilHttpEndpointGroup) StaticFile(string, string) {
+}
+
+func (n *nilHttpEndpointGroup) StaticDir(string, http.FileSystem) {
 }
 
 func (n *nilHttpEndpointGroup) GET(string, HttpHandler) {
+}
+
+func (n *nilHttpEndpointGroup) PATCH(string, HttpHandler) {
 }
 
 func (n *nilHttpEndpointGroup) POST(string, HttpHandler) {
