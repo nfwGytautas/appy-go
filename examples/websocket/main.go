@@ -29,7 +29,7 @@ func main() {
 	}
 
 	// Add an endpoint handler
-	app.Http().RootGroup().GET("/connect", func(c appy.HttpContext) appy.HttpResult {
+	app.Http().RootGroup().GET("/connect", func(c *appy.HttpContext) appy.HttpResult {
 		socket := c.App.Sockets().Create(appy.WebsocketOptions{
 			OnMessage: func(socket appy.Websocket, data []byte) {
 				c.App.Logger.Debug("Received message: '%v'", string(data))

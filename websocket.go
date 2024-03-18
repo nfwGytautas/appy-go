@@ -17,7 +17,7 @@ type WebsocketFactoryOptions struct {
 // Websocket object
 type Websocket interface {
 	// Start the websocket
-	Spin(HttpContext) error
+	Spin(*HttpContext) error
 
 	// Send a message to websocket
 	Send([]byte)

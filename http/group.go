@@ -2,6 +2,7 @@ package appy_driver_http
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nfwGytautas/appy"
@@ -10,6 +11,7 @@ import (
 type ginHttpEndpointGroup struct {
 	provider *ginHttpServer
 	group    *gin.RouterGroup
+	parent   *ginHttpEndpointGroup
 
 	pre  []appy.HttpMiddleware
 	post []appy.HttpMiddleware
@@ -17,17 +19,18 @@ type ginHttpEndpointGroup struct {
 
 func (g *ginHttpEndpointGroup) Subgroup(path string) appy.HttpEndpointGroup {
 	return &ginHttpEndpointGroup{
+		parent:   g,
 		provider: g.provider,
 		group:    g.group.Group(path),
 	}
 }
 
-func (g *ginHttpEndpointGroup) Pre(middleware appy.HttpMiddleware) {
-	g.pre = append(g.pre, middleware)
+func (g *ginHttpEndpointGroup) Pre(middleware ...appy.HttpMiddleware) {
+	g.pre = append(g.pre, middleware...)
 }
 
-func (g *ginHttpEndpointGroup) Post(middleware appy.HttpMiddleware) {
-	g.post = append(g.post, middleware)
+func (g *ginHttpEndpointGroup) Post(middleware ...appy.HttpMiddleware) {
+	g.post = append(g.post, middleware...)
 }
 
 func (g *ginHttpEndpointGroup) StaticFile(path, file string) {
@@ -89,35 +92,47 @@ func (g *ginHttpEndpointGroup) appyCtx(c *gin.Context) appy.HttpContext {
 }
 
 func (g *ginHttpEndpointGroup) handle(c *gin.Context, handler appy.HttpHandler) {
-	for _, pre := range g.pre {
-		res := pre(g.appyCtx(c))
-		if res.HasError() {
-			g.handleResult(c, res)
-			return
-		}
+	g.provider.app.Logger.Debug("Handling request: %v", appy.ReflectFunctionName(handler))
+
+	ctx := g.appyCtx(c)
+
+	res := g.runPreHandlerMiddleware(&ctx)
+	if res.IsFailed() {
+		g.handleResult(c, res)
+		return
 	}
 
-	res := handler(g.appyCtx(c))
-
-	for _, post := range g.post {
-		postRes := post(g.appyCtx(c))
-		if postRes.HasError() {
-			g.handleResult(c, res)
-			return
-		}
+	handlerRes := handler(&ctx)
+	if handlerRes.IsFailed() {
+		g.handleResult(c, handlerRes)
+		return
 	}
 
-	g.handleResult(c, res)
+	res = g.runPostHandlerMiddleware(&ctx)
+	if res.IsFailed() {
+		g.handleResult(c, res)
+		return
+	}
+
+	g.handleResult(c, handlerRes)
 }
 
-func (g *ginHttpEndpointGroup) handleResult(c *gin.Context, res appy.HttpResult) bool {
-	failed := false
-
+func (g *ginHttpEndpointGroup) handleResult(c *gin.Context, res appy.HttpResult) {
 	// Unexpected error
 	if res.HasError() {
 		// Try and map the error from the error map
-		res = g.provider.options.ErrorMapper.Map(res.Error)
-		failed = true
+		g.provider.options.ErrorMapper.Map(&res)
+
+		c.JSON(
+			res.StatusCode,
+			gin.H{
+				"body":  res.Body,
+				"error": strings.Split(res.Error.Error(), "\n"),
+				"debug": res.Tracker,
+			},
+		)
+
+		return
 	}
 
 	// Write the response
@@ -129,6 +144,40 @@ func (g *ginHttpEndpointGroup) handleResult(c *gin.Context, res appy.HttpResult)
 	} else {
 		c.Status(res.StatusCode)
 	}
+}
 
-	return failed
+func (g *ginHttpEndpointGroup) runPreHandlerMiddleware(ctx *appy.HttpContext) appy.HttpResult {
+	if g.parent != nil {
+		res := g.parent.runPreHandlerMiddleware(ctx)
+		if res.HasError() {
+			return res
+		}
+	}
+
+	for _, pre := range g.pre {
+		res := pre(ctx)
+		if res.HasError() {
+			return res
+		}
+	}
+
+	return ctx.Nil()
+}
+
+func (g *ginHttpEndpointGroup) runPostHandlerMiddleware(ctx *appy.HttpContext) appy.HttpResult {
+	for _, post := range g.post {
+		res := post(ctx)
+		if res.HasError() {
+			return res
+		}
+	}
+
+	if g.parent != nil {
+		res := g.parent.runPostHandlerMiddleware(ctx)
+		if res.HasError() {
+			return res
+		}
+	}
+
+	return ctx.Nil()
 }

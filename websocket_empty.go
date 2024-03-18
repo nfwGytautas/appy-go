@@ -12,7 +12,7 @@ func (n *nilWebsocketFactory) Create(options WebsocketOptions) Websocket {
 	return &nilWebsocket{}
 }
 
-func (n *nilWebsocket) Spin(c HttpContext) error {
+func (n *nilWebsocket) Spin(c *HttpContext) error {
 	return nil
 }
 

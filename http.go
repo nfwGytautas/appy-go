@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/google/uuid"
@@ -22,7 +23,7 @@ type HttpServer interface {
 
 // Utility struct for mapping errors to http responses
 type HttpErrorMapper interface {
-	Map(error) HttpResult
+	Map(*HttpResult)
 }
 
 // Options when creating a new http server
@@ -51,10 +52,10 @@ type HttpEndpointGroup interface {
 	Subgroup(string) HttpEndpointGroup
 
 	// Attach pre-handle middleware
-	Pre(HttpMiddleware)
+	Pre(...HttpMiddleware)
 
 	// Attach post-handle middleware
-	Post(HttpMiddleware)
+	Post(...HttpMiddleware)
 
 	StaticFile(string, string)
 	StaticDir(string, http.FileSystem)
@@ -67,7 +68,7 @@ type HttpEndpointGroup interface {
 }
 
 // HttpHandler is a function that handles an http request
-type HttpHandler func(c HttpContext) HttpResult
+type HttpHandler func(*HttpContext) HttpResult
 
 // A http handler context
 type HttpContext struct {
@@ -89,8 +90,13 @@ type HttpResult struct {
 	StatusCode int
 	Body       interface{}
 	Error      error
+	Tracker    HttpResultTrackerInfo
 
 	failed bool
+}
+
+type HttpResultTrackerInfo struct {
+	At string
 }
 
 // HeaderParser is used to parse headers from a http request
@@ -134,7 +140,7 @@ type BodyParser interface {
 
 // This is a middleware function that can be used to add functionality that runs before the main handler,
 // if the returned result is not Nil it will be passed down the chain
-type HttpMiddleware func(c HttpContext) HttpResult
+type HttpMiddleware func(*HttpContext) HttpResult
 
 func (c *HttpContext) Set(key string, value any) {
 	if c.tempStorage == nil {
@@ -225,6 +231,7 @@ func (c *HttpContext) Error(err error) HttpResult {
 		StatusCode: http.StatusInternalServerError,
 		Error:      err,
 		failed:     true,
+		Tracker:    c.getTrackerInfo(),
 	}
 }
 
@@ -234,4 +241,11 @@ func (hr HttpResult) IsFailed() bool {
 
 func (hr HttpResult) HasError() bool {
 	return hr.Error != nil
+}
+
+func (c *HttpContext) getTrackerInfo() HttpResultTrackerInfo {
+	_, file, line, _ := runtime.Caller(2)
+	return HttpResultTrackerInfo{
+		At: fmt.Sprintf("%v:%v", file, line),
+	}
 }

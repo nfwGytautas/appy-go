@@ -29,19 +29,19 @@ func main() {
 	}
 
 	// Add an endpoint handler
-	app.Http().RootGroup().GET("/hello", func(c appy.HttpContext) appy.HttpResult {
+	app.Http().RootGroup().GET("/hello", func(c *appy.HttpContext) appy.HttpResult {
 		return c.Ok(http.StatusNoContent, nil)
 	})
 
-	app.Http().RootGroup().GET("/fail", func(c appy.HttpContext) appy.HttpResult {
+	app.Http().RootGroup().GET("/fail", func(c *appy.HttpContext) appy.HttpResult {
 		return c.Fail(http.StatusBadRequest, "Bad request")
 	})
 
-	app.Http().RootGroup().GET("/error", func(c appy.HttpContext) appy.HttpResult {
+	app.Http().RootGroup().GET("/error", func(c *appy.HttpContext) appy.HttpResult {
 		return c.Error(errors.New("something went wrong"))
 	})
 
-	app.Http().RootGroup().GET("/services", func(c appy.HttpContext) appy.HttpResult {
+	app.Http().RootGroup().GET("/services", func(c *appy.HttpContext) appy.HttpResult {
 		// Access appy services from http request
 		c.App.Logger.Debug("Logger service accessed")
 		return c.Ok(http.StatusNoContent, nil)

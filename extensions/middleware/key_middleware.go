@@ -7,7 +7,7 @@ import (
 )
 
 func ApiKeyMiddleware(apiKey string, failStatusCode int) appy.HttpMiddleware {
-	return func(c appy.HttpContext) appy.HttpResult {
+	return func(c *appy.HttpContext) appy.HttpResult {
 		// Check header
 		token, err := c.Header.ExpectSingleString("Authorization")
 		if err != nil {

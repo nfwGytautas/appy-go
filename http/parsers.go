@@ -126,7 +126,7 @@ func (g *ginBodyParser) ParseSingle(out any) error {
 		return err
 	}
 
-	err = validate.Struct(body)
+	err = validate.Struct(out)
 	if err != nil {
 		return err
 	}

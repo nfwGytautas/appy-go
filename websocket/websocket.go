@@ -54,7 +54,7 @@ func (w *websocketFactory) Create(options appy.WebsocketOptions) appy.Websocket 
 	}
 }
 
-func (ws *socket) Spin(c appy.HttpContext) error {
+func (ws *socket) Spin(c *appy.HttpContext) error {
 	var err error
 
 	ws.ws, err = ws.factory.upgrader.Upgrade(c.Writer, c.Request, nil)

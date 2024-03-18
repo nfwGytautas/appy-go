@@ -39,7 +39,7 @@ func NewJwtAuth(secret string) JwtAuth {
 }
 
 func (j JwtAuth) Authentication() appy.HttpMiddleware {
-	return func(c appy.HttpContext) appy.HttpResult {
+	return func(c *appy.HttpContext) appy.HttpResult {
 		info, res := j.ParseAccessToken(c)
 		if res.IsFailed() {
 			return res
@@ -52,7 +52,7 @@ func (j JwtAuth) Authentication() appy.HttpMiddleware {
 }
 
 func (j JwtAuth) Authorization(roles []string) appy.HttpMiddleware {
-	return func(c appy.HttpContext) appy.HttpResult {
+	return func(c *appy.HttpContext) appy.HttpResult {
 		// Authenticate
 		info, res := j.ParseAccessToken(c)
 		if res.IsFailed() {
@@ -75,7 +75,7 @@ func (j JwtAuth) Generate(id uint, role string) (string, string, error) {
 	claims := token.Claims.(jwt.MapClaims)
 	claims["sub"] = id
 	claims["role"] = role
-	claims["exp"] = time.Now().Add(5 * time.Minute)
+	claims["exp"] = time.Now().Add(5 * time.Minute).Unix()
 
 	tokenString, err := token.SignedString([]byte(j.secret))
 	if err != nil {
@@ -95,7 +95,7 @@ func (j JwtAuth) Generate(id uint, role string) (string, string, error) {
 	return tokenString, refreshTokenString, nil
 }
 
-func (j JwtAuth) ParseAccessToken(c appy.HttpContext) (AccessTokenInfo, appy.HttpResult) {
+func (j JwtAuth) ParseAccessToken(c *appy.HttpContext) (AccessTokenInfo, appy.HttpResult) {
 	result := AccessTokenInfo{}
 
 	// Token empty check if it is inside Authorization header
@@ -128,7 +128,7 @@ func (j JwtAuth) ParseAccessToken(c appy.HttpContext) (AccessTokenInfo, appy.Htt
 	return result, c.Nil()
 }
 
-func (j JwtAuth) ParseRefreshToken(c appy.HttpContext, token string) (RefreshTokenInfo, appy.HttpResult) {
+func (j JwtAuth) ParseRefreshToken(c *appy.HttpContext, token string) (RefreshTokenInfo, appy.HttpResult) {
 	result := RefreshTokenInfo{}
 
 	_, claims, err := j.parseToken(token)
@@ -175,12 +175,15 @@ func (j JwtAuth) parseToken(tokenString string) (*jwt.Token, jwt.MapClaims, erro
 
 	// Expiration
 	timeStamp := claims["exp"]
-	if validity, ok := timeStamp.(float64); ok {
-		tm := time.Unix(int64(validity), 0)
-		remainer := time.Until(tm)
-		if remainer <= 0 {
-			return nil, nil, errors.New("token expired")
-		}
+	validity, ok := timeStamp.(float64)
+	if !ok {
+		return nil, nil, errors.New("invalid token")
+	}
+
+	tm := time.Unix(int64(validity), 0)
+	remainer := time.Until(tm)
+	if remainer <= 0 {
+		return nil, nil, errors.New("token expired")
 	}
 
 	return jwtToken, claims, nil
