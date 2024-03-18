@@ -64,6 +64,14 @@ func (n *jobScheduler) Add(options appy.JobOptions) {
 		tick:         options.Tick,
 	}
 
+	if options.Instant {
+		go func() {
+			time.Sleep(job.tick)
+			job.job(*n.app)
+		}()
+		return
+	}
+
 	if !options.Persistent {
 		n.oneOffJobs = append(n.oneOffJobs, job)
 		return

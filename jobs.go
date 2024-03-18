@@ -34,6 +34,9 @@ type JobOptions struct {
 
 	// If the job should be persistent, if true the job will be executed periodically until the end of the program or false if it is a one off job
 	Persistent bool
+
+	// If the job should be executed instantly, if true the job will be executed immediately
+	Instant bool
 }
 
 type Job func(Appy)
