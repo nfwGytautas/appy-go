@@ -132,6 +132,8 @@ func (g *ginHttpEndpointGroup) handleResult(c *gin.Context, res appy.HttpResult)
 			},
 		)
 
+		g.provider.app.Logger.Debug("Error in handler: '%v', at: '%v'", res.Error.Error(), res.Tracker.At)
+
 		return
 	}
 

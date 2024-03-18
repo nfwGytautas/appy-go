@@ -32,7 +32,7 @@ type ginBodyParser struct {
 func (g *ginHeaderParser) ExpectSingleString(key string) (string, error) {
 	val := g.ctx.GetHeader(key)
 	if val == "" {
-		return "", errors.New("header " + key + " not specified")
+		return "", errors.New("header '" + key + "' not specified")
 	}
 
 	return val, nil
@@ -63,7 +63,7 @@ func (g *ginQueryParser) Page() int {
 func (g *ginQueryParser) ExpectString(key string) (string, error) {
 	val := g.ctx.Query(key)
 	if val == "" {
-		return "", errors.New("query parameter " + key + " not specified")
+		return "", errors.New("query parameter '" + key + "' not specified")
 	}
 
 	return val, nil
@@ -72,7 +72,7 @@ func (g *ginQueryParser) ExpectString(key string) (string, error) {
 func (g *ginQueryParser) ExpectInt(key string) (int, error) {
 	value := g.ctx.DefaultQuery(key, "0")
 	if value == "" {
-		return 0, errors.New("query parameter " + key + " not specified")
+		return 0, errors.New("query parameter '" + key + "' not specified")
 	}
 
 	numericalValue, err := strconv.Atoi(value)
@@ -104,7 +104,7 @@ func (g *ginPathParser) GetInt(key string) int {
 func (g *ginPathParser) ExpectInt(key string) (int, error) {
 	value := g.ctx.Param(key)
 	if value == "" {
-		return 0, errors.New("path parameter " + key + " not specified")
+		return 0, errors.New("path parameter '" + key + "' not specified")
 	}
 
 	numericalValue, err := strconv.Atoi(value)
