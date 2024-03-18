@@ -113,13 +113,13 @@ func (j JwtAuth) ParseAccessToken(c *appy.HttpContext) (AccessTokenInfo, appy.Ht
 
 	_, claims, err := j.parseToken(tokenString)
 	if err != nil {
-		return result, c.Error(err)
+		return result, c.Fail(http.StatusUnauthorized, err.Error())
 	}
 
 	// User id
 	uid, err := strconv.ParseUint(fmt.Sprintf("%.0f", claims["sub"]), 10, 32)
 	if err != nil {
-		return result, c.Error(err)
+		return result, c.Fail(http.StatusUnauthorized, "Invalid token")
 	}
 
 	result.ID = uint(uid)

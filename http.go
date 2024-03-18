@@ -157,7 +157,7 @@ func (c *HttpContext) Get(key string) (any, HttpResult) {
 
 	value, ok := c.tempStorage[key]
 	if !ok {
-		return nil, c.Error(errors.New("key not found in temporary storage"))
+		return nil, c.Error(errors.New("key '" + key + "' not found in temporary storage"))
 	}
 
 	return value, c.Nil()

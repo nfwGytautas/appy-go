@@ -151,14 +151,14 @@ func (g *ginHttpEndpointGroup) handleResult(c *gin.Context, res appy.HttpResult)
 func (g *ginHttpEndpointGroup) runPreHandlerMiddleware(ctx *appy.HttpContext) appy.HttpResult {
 	if g.parent != nil {
 		res := g.parent.runPreHandlerMiddleware(ctx)
-		if res.HasError() {
+		if res.IsFailed() {
 			return res
 		}
 	}
 
 	for _, pre := range g.pre {
 		res := pre(ctx)
-		if res.HasError() {
+		if res.IsFailed() {
 			return res
 		}
 	}
@@ -169,14 +169,14 @@ func (g *ginHttpEndpointGroup) runPreHandlerMiddleware(ctx *appy.HttpContext) ap
 func (g *ginHttpEndpointGroup) runPostHandlerMiddleware(ctx *appy.HttpContext) appy.HttpResult {
 	for _, post := range g.post {
 		res := post(ctx)
-		if res.HasError() {
+		if res.IsFailed() {
 			return res
 		}
 	}
 
 	if g.parent != nil {
 		res := g.parent.runPostHandlerMiddleware(ctx)
-		if res.HasError() {
+		if res.IsFailed() {
 			return res
 		}
 	}
