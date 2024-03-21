@@ -150,17 +150,17 @@ func (c *HttpContext) Set(key string, value any) {
 	c.tempStorage[key] = value
 }
 
-func (c *HttpContext) Get(key string) (any, HttpResult) {
+func (c *HttpContext) Get(key string) (any, error) {
 	if c.tempStorage == nil {
-		return nil, c.Error(errors.New("no values in temporary storage"))
+		return nil, errors.New("no values in temporary storage")
 	}
 
 	value, ok := c.tempStorage[key]
 	if !ok {
-		return nil, c.Error(errors.New("key '" + key + "' not found in temporary storage"))
+		return nil, errors.New("key '" + key + "' not found in temporary storage")
 	}
 
-	return value, c.Nil()
+	return value, nil
 }
 
 func (c *HttpContext) StoreMultipartFile(key string, outDir string) (string, HttpResult) {

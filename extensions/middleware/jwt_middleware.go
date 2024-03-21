@@ -108,7 +108,7 @@ func (j JwtAuth) ParseAccessToken(c *appy.HttpContext) (AccessTokenInfo, appy.Ht
 	if len(strings.Split(tokenString, " ")) == 2 {
 		tokenString = strings.Split(tokenString, " ")[1]
 	} else {
-		return result, c.Fail(http.StatusUnauthorized, "Invalid token")
+		return result, c.Fail(http.StatusUnauthorized, "Token malformed, could be missing 'Bearer' prefix")
 	}
 
 	_, claims, err := j.parseToken(tokenString)
