@@ -1,6 +1,7 @@
 package appy
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -78,8 +79,13 @@ type HttpContext struct {
 	Path   PathParameterParser
 	Body   BodyParser
 
+	Context context.Context
+
 	Writer  http.ResponseWriter
 	Request *http.Request
+
+	Tracker     TrackerScope
+	Transaction TrackerTransaction
 
 	// Temporary storage to pass from middleware to handler
 	tempStorage map[string]any

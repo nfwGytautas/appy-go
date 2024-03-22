@@ -23,6 +23,9 @@ type Appy struct {
 
 	// If there is a need for websocket support a factory needs to be specified
 	sockets WebsocketFactory
+
+	// Tracker for monitoring the app health
+	tracker Tracker
 }
 
 // Options to pass when creating an appy
@@ -32,6 +35,7 @@ type AppyOptions struct {
 	HTTP        *HttpOptions
 	Jobs        *JobSchedulerOptions
 	Sockets     *WebsocketFactoryOptions
+	Tracker     *TrackerOptions
 }
 
 // New creates a new instance of the appy application
@@ -39,13 +43,13 @@ func New(options AppyOptions) (*Appy, error) {
 	app := &Appy{}
 
 	app.Environment = options.Environment
+	app.Logger = newLoger()
 
 	// Logger
-	if options.Logger.Provider == nil {
-		return nil, ErrNoLogger
+	err := app.Logger.setImplementations(options.Logger.Implementations)
+	if err != nil {
+		return nil, err
 	}
-
-	app.Logger = options.Logger.Provider
 
 	// Http
 	if options.HTTP != nil {
@@ -77,12 +81,28 @@ func New(options AppyOptions) (*Appy, error) {
 		}
 	}
 
+	// Tracker
+	if options.Tracker != nil {
+		app.tracker = options.Tracker.Provider
+
+		err := options.Tracker.Provider.Initialize(app, *options.Tracker)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return app, nil
 }
 
 // Run the appy application, this will return an error if something goes wrong, otherwise this is a blocking call
 func (a *Appy) Run() error {
 	a.Logger.Debug("Starting appy application")
+
+	defer a.Logger.Flush()
+
+	if a.HasTracker() {
+		a.tracker.ForceFlush()
+	}
 
 	// Start jobs
 	if a.jobs != nil {
@@ -139,6 +159,19 @@ func (a *Appy) Sockets() WebsocketFactory {
 	}
 
 	return a.sockets
+}
+
+func (a *Appy) HasTracker() bool {
+	return a.tracker != nil
+}
+
+func (a *Appy) Tracker() Tracker {
+	if a.tracker == nil && !a.Environment.FailOnInvalidService {
+		a.Logger.Warn("No tracker available, returning nil provider")
+		return &nilTracker{}
+	}
+
+	return a.tracker
 }
 
 func (a *Appy) waitForSignal() {

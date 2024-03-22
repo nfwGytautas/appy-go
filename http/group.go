@@ -1,6 +1,7 @@
 package appy_driver_http
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
@@ -88,36 +89,46 @@ func (g *ginHttpEndpointGroup) appyCtx(c *gin.Context) appy.HttpContext {
 		},
 		Writer:  c.Writer,
 		Request: c.Request,
+		Context: context.TODO(),
 	}
 }
 
 func (g *ginHttpEndpointGroup) handle(c *gin.Context, handler appy.HttpHandler) {
-	g.provider.app.Logger.Debug("Handling request: %v", appy.ReflectFunctionName(handler))
+	handlerName := appy.ReflectFunctionName(handler)
+	g.provider.app.Logger.Debug("Handling request: %v", handlerName)
 
 	ctx := g.appyCtx(c)
 
+	ctx.Tracker = g.provider.app.Tracker().OpenScope(handlerName)
+	ctx.Tracker.SetRequest(c.Request)
+	ctx.Transaction = g.provider.app.Tracker().OpenTransaction(ctx.Context, handlerName)
+	defer func() {
+		ctx.Transaction.Finish()
+		g.provider.app.Tracker().Flush()
+	}()
+
 	res := g.runPreHandlerMiddleware(&ctx)
 	if res.IsFailed() {
-		g.handleResult(c, res)
+		g.handleResult(c, ctx.Tracker, res)
 		return
 	}
 
 	handlerRes := handler(&ctx)
 	if handlerRes.IsFailed() {
-		g.handleResult(c, handlerRes)
+		g.handleResult(c, ctx.Tracker, handlerRes)
 		return
 	}
 
 	res = g.runPostHandlerMiddleware(&ctx)
 	if res.IsFailed() {
-		g.handleResult(c, res)
+		g.handleResult(c, ctx.Tracker, res)
 		return
 	}
 
-	g.handleResult(c, handlerRes)
+	g.handleResult(c, ctx.Tracker, handlerRes)
 }
 
-func (g *ginHttpEndpointGroup) handleResult(c *gin.Context, res appy.HttpResult) {
+func (g *ginHttpEndpointGroup) handleResult(c *gin.Context, tracker appy.TrackerScope, res appy.HttpResult) {
 	// Unexpected error
 	if res.HasError() {
 		// Try and map the error from the error map
@@ -133,7 +144,7 @@ func (g *ginHttpEndpointGroup) handleResult(c *gin.Context, res appy.HttpResult)
 		)
 
 		g.provider.app.Logger.Debug("Error in handler: '%v', at: '%v'", res.Error.Error(), res.Tracker.At)
-
+		tracker.CaptureError(res.Error)
 		return
 	}
 
@@ -157,6 +168,9 @@ func (g *ginHttpEndpointGroup) runPreHandlerMiddleware(ctx *appy.HttpContext) ap
 	}
 
 	for _, pre := range g.pre {
+		name := appy.ReflectFunctionName(pre)
+		ctx.Tracker.AddBreadcrumb("Pre middleware", name)
+
 		res := pre(ctx)
 		if res.IsFailed() {
 			return res
@@ -168,6 +182,9 @@ func (g *ginHttpEndpointGroup) runPreHandlerMiddleware(ctx *appy.HttpContext) ap
 
 func (g *ginHttpEndpointGroup) runPostHandlerMiddleware(ctx *appy.HttpContext) appy.HttpResult {
 	for _, post := range g.post {
+		name := appy.ReflectFunctionName(post)
+		ctx.Tracker.AddBreadcrumb("Post middleware", name)
+
 		res := post(ctx)
 		if res.IsFailed() {
 			return res

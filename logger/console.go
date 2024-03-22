@@ -16,7 +16,7 @@ type consoleLogger struct {
 }
 
 // A very simple console logging provider, mainly to be used for debugging or a quick setup
-func ConsoleProvider() appy.Logger {
+func ConsoleProvider() appy.LoggerImplementation {
 	return &consoleLogger{}
 }
 
@@ -34,4 +34,12 @@ func (c *consoleLogger) Warn(fmt string, args ...interface{}) {
 
 func (c *consoleLogger) Error(fmt string, args ...interface{}) {
 	log.Printf("[ERROR] "+redSequence+fmt+resetSequence, args...)
+}
+
+func (c *consoleLogger) Initialize() error {
+	return nil
+}
+
+func (c *consoleLogger) Flush() {
+	// Nothing to do here
 }
