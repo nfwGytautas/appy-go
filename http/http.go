@@ -1,55 +1,29 @@
-package appy_driver_http
+package appy_http
 
 import (
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/nfwGytautas/appy"
+	appy_logger "github.com/nfwGytautas/appy/logger"
 )
 
 // GIN powered http provider for appy
 type ginHttpServer struct {
 	engine  *gin.Engine
-	app     *appy.Appy
-	options appy.HttpOptions
+	options HttpOptions
 
 	rootGroup *gin.RouterGroup
 }
 
-// Create a new appy HttpProvider
-func Provider() appy.HttpServer {
-	return &ginHttpServer{}
-}
-
-func (g *ginHttpServer) Initialize(app *appy.Appy, options appy.HttpOptions) error {
-	if !app.Environment.DebugMode {
-		gin.SetMode(gin.ReleaseMode)
-	}
-
-	g.engine = gin.Default()
-	g.engine.Use(cors.Default())
-	g.app = app
-	g.options = options
-
-	g.rootGroup = g.engine.Group("/")
-
-	if g.options.ErrorMapper == nil {
-		g.options.ErrorMapper = &defaultErrorMapper{}
-	}
-
-	return nil
-}
-
 func (g *ginHttpServer) Run() error {
 	if g.options.SSL != nil {
-		g.app.Logger.Debug("Running HTTPS")
+		appy_logger.Get().Debug("Running HTTPS")
 		return g.engine.RunTLS(g.options.Address, g.options.SSL.CertFile, g.options.SSL.KeyFile)
 	}
 
-	g.app.Logger.Debug("Running HTTP")
+	appy_logger.Get().Debug("Running HTTP")
 	return g.engine.Run(g.options.Address)
 }
 
-func (g *ginHttpServer) RootGroup() appy.HttpEndpointGroup {
+func (g *ginHttpServer) RootGroup() HttpEndpointGroup {
 	return &ginHttpEndpointGroup{
 		provider: g,
 		group:    g.rootGroup,

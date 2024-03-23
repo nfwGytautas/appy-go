@@ -1,4 +1,4 @@
-package appy_driver_websocket
+package appy_websockets
 
 var (
 	cNewline = []byte{'\n'}

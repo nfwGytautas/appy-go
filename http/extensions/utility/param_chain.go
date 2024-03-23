@@ -1,9 +1,9 @@
 package utility
 
 import (
-	"github.com/nfwGytautas/appy"
 	"github.com/nfwGytautas/appy/driver"
-	appy_middleware "github.com/nfwGytautas/appy/extensions/middleware"
+	appy_http "github.com/nfwGytautas/appy/http"
+	appy_middleware "github.com/nfwGytautas/appy/http/extensions/middleware"
 )
 
 // The size of pages for all requests
@@ -11,12 +11,12 @@ const PageSize = 20
 
 // Utility struct for getting required handler parameters
 type ParamChain struct {
-	Context *appy.HttpContext
+	Context *appy_http.HttpContext
 
 	currentError error
 }
 
-func NewParamChain(context *appy.HttpContext) *ParamChain {
+func NewParamChain(context *appy_http.HttpContext) *ParamChain {
 	return &ParamChain{Context: context, currentError: nil}
 }
 

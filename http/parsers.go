@@ -1,4 +1,4 @@
-package appy_driver_http
+package appy_http
 
 import (
 	"encoding/json"

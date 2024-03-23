@@ -1,4 +1,4 @@
-package appy
+package appy_http
 
 import (
 	"context"
@@ -10,27 +10,14 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	appy_tracker "github.com/nfwGytautas/appy/tracker"
 )
-
-// The HttpProvider interface is used to define the methods that are required for a http server, these are implemented by drivers
-type HttpServer interface {
-	Initialize(*Appy, HttpOptions) error
-	Run() error
-
-	// Get the root group for the http server i.e. /
-	RootGroup() HttpEndpointGroup
-}
-
-// Utility struct for mapping errors to http responses
-type HttpErrorMapper interface {
-	Map(*HttpResult)
-}
 
 // Options when creating a new http server
 type HttpOptions struct {
-	Provider HttpServer
-
 	// Error mapper
 	ErrorMapper HttpErrorMapper
 
@@ -45,6 +32,22 @@ type HttpOptions struct {
 type SSLSettings struct {
 	CertFile string
 	KeyFile  string
+}
+
+// HttpHandler is a function that handles an http request
+type HttpHandler func(*HttpContext) HttpResult
+
+// The HttpProvider interface is used to define the methods that are required for a http server, these are implemented by drivers
+type HttpServer interface {
+	Run() error
+
+	// Get the root group for the http server i.e. /
+	RootGroup() HttpEndpointGroup
+}
+
+// Utility struct for mapping errors to http responses
+type HttpErrorMapper interface {
+	Map(*HttpResult)
 }
 
 // HttpEndpointGroup is used to group http methods together
@@ -66,43 +69,6 @@ type HttpEndpointGroup interface {
 	PATCH(string, HttpHandler)
 	PUT(string, HttpHandler)
 	DELETE(string, HttpHandler)
-}
-
-// HttpHandler is a function that handles an http request
-type HttpHandler func(*HttpContext) HttpResult
-
-// A http handler context
-type HttpContext struct {
-	App    *Appy
-	Header HeaderParser
-	Query  QueryParameterParser
-	Path   PathParameterParser
-	Body   BodyParser
-
-	Context context.Context
-
-	Writer  http.ResponseWriter
-	Request *http.Request
-
-	Tracker     TrackerScope
-	Transaction TrackerTransaction
-
-	// Temporary storage to pass from middleware to handler
-	tempStorage map[string]any
-}
-
-// A result of a http request
-type HttpResult struct {
-	StatusCode int
-	Body       interface{}
-	Error      error
-	Tracker    HttpResultTrackerInfo
-
-	failed bool
-}
-
-type HttpResultTrackerInfo struct {
-	At string
 }
 
 // HeaderParser is used to parse headers from a http request
@@ -142,6 +108,39 @@ type BodyParser interface {
 
 	// Parse an array of structs from the body
 	ParseArray(any) error
+}
+
+// A http handler context
+type HttpContext struct {
+	Header HeaderParser
+	Query  QueryParameterParser
+	Path   PathParameterParser
+	Body   BodyParser
+
+	Context context.Context
+
+	Writer  http.ResponseWriter
+	Request *http.Request
+
+	Tracker     appy_tracker.TrackerScope
+	Transaction appy_tracker.TrackerTransaction
+
+	// Temporary storage to pass from middleware to handler
+	tempStorage map[string]any
+}
+
+// A result of a http request
+type HttpResult struct {
+	StatusCode int
+	Body       interface{}
+	Error      error
+	Tracker    HttpResultTrackerInfo
+
+	failed bool
+}
+
+type HttpResultTrackerInfo struct {
+	At string
 }
 
 // This is a middleware function that can be used to add functionality that runs before the main handler,
@@ -254,4 +253,31 @@ func (c *HttpContext) getTrackerInfo() HttpResultTrackerInfo {
 	return HttpResultTrackerInfo{
 		At: fmt.Sprintf("%v:%v", file, line),
 	}
+}
+
+var server HttpServer
+
+func Initialize(options HttpOptions) error {
+	srv := &ginHttpServer{}
+	// if !app.Environment.DebugMode {
+	// 	gin.SetMode(gin.ReleaseMode)
+	// }
+
+	srv.engine = gin.Default()
+	srv.engine.Use(cors.Default())
+	srv.options = options
+
+	srv.rootGroup = srv.engine.Group("/")
+
+	if srv.options.ErrorMapper == nil {
+		srv.options.ErrorMapper = &defaultErrorMapper{}
+	}
+
+	server = srv
+
+	return nil
+}
+
+func Get() HttpServer {
+	return server
 }

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/nfwGytautas/appy"
+	appy_http "github.com/nfwGytautas/appy/http"
 )
 
 // Struct for containing token info
@@ -38,8 +38,8 @@ func NewJwtAuth(secret string) JwtAuth {
 	}
 }
 
-func (j JwtAuth) Authentication() appy.HttpMiddleware {
-	return func(c *appy.HttpContext) appy.HttpResult {
+func (j JwtAuth) Authentication() appy_http.HttpMiddleware {
+	return func(c *appy_http.HttpContext) appy_http.HttpResult {
 		info, res := j.ParseAccessToken(c)
 		if res.IsFailed() {
 			return res
@@ -51,8 +51,8 @@ func (j JwtAuth) Authentication() appy.HttpMiddleware {
 	}
 }
 
-func (j JwtAuth) Authorization(roles []string) appy.HttpMiddleware {
-	return func(c *appy.HttpContext) appy.HttpResult {
+func (j JwtAuth) Authorization(roles []string) appy_http.HttpMiddleware {
+	return func(c *appy_http.HttpContext) appy_http.HttpResult {
 		// Authenticate
 		info, res := j.ParseAccessToken(c)
 		if res.IsFailed() {
@@ -95,7 +95,7 @@ func (j JwtAuth) Generate(id uint, role string) (string, string, error) {
 	return tokenString, refreshTokenString, nil
 }
 
-func (j JwtAuth) ParseAccessToken(c *appy.HttpContext) (AccessTokenInfo, appy.HttpResult) {
+func (j JwtAuth) ParseAccessToken(c *appy_http.HttpContext) (AccessTokenInfo, appy_http.HttpResult) {
 	result := AccessTokenInfo{}
 
 	// Token empty check if it is inside Authorization header
@@ -128,7 +128,7 @@ func (j JwtAuth) ParseAccessToken(c *appy.HttpContext) (AccessTokenInfo, appy.Ht
 	return result, c.Nil()
 }
 
-func (j JwtAuth) ParseRefreshToken(c *appy.HttpContext, token string) (RefreshTokenInfo, appy.HttpResult) {
+func (j JwtAuth) ParseRefreshToken(c *appy_http.HttpContext, token string) (RefreshTokenInfo, appy_http.HttpResult) {
 	result := RefreshTokenInfo{}
 
 	_, claims, err := j.parseToken(token)

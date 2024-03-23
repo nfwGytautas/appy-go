@@ -1,4 +1,4 @@
-package appy_driver_http
+package appy_http
 
 import (
 	"context"
@@ -6,7 +6,9 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/nfwGytautas/appy"
+	appy_logger "github.com/nfwGytautas/appy/logger"
+	appy_tracker "github.com/nfwGytautas/appy/tracker"
+	appy_utils "github.com/nfwGytautas/appy/utils"
 )
 
 type ginHttpEndpointGroup struct {
@@ -14,11 +16,11 @@ type ginHttpEndpointGroup struct {
 	group    *gin.RouterGroup
 	parent   *ginHttpEndpointGroup
 
-	pre  []appy.HttpMiddleware
-	post []appy.HttpMiddleware
+	pre  []HttpMiddleware
+	post []HttpMiddleware
 }
 
-func (g *ginHttpEndpointGroup) Subgroup(path string) appy.HttpEndpointGroup {
+func (g *ginHttpEndpointGroup) Subgroup(path string) HttpEndpointGroup {
 	return &ginHttpEndpointGroup{
 		parent:   g,
 		provider: g.provider,
@@ -26,11 +28,11 @@ func (g *ginHttpEndpointGroup) Subgroup(path string) appy.HttpEndpointGroup {
 	}
 }
 
-func (g *ginHttpEndpointGroup) Pre(middleware ...appy.HttpMiddleware) {
+func (g *ginHttpEndpointGroup) Pre(middleware ...HttpMiddleware) {
 	g.pre = append(g.pre, middleware...)
 }
 
-func (g *ginHttpEndpointGroup) Post(middleware ...appy.HttpMiddleware) {
+func (g *ginHttpEndpointGroup) Post(middleware ...HttpMiddleware) {
 	g.post = append(g.post, middleware...)
 }
 
@@ -42,39 +44,38 @@ func (g *ginHttpEndpointGroup) StaticDir(path string, dir http.FileSystem) {
 	g.group.StaticFS(path, dir)
 }
 
-func (g *ginHttpEndpointGroup) GET(path string, handler appy.HttpHandler) {
+func (g *ginHttpEndpointGroup) GET(path string, handler HttpHandler) {
 	g.group.GET(path, func(c *gin.Context) {
 		g.handle(c, handler)
 	})
 }
 
-func (g *ginHttpEndpointGroup) POST(path string, handler appy.HttpHandler) {
+func (g *ginHttpEndpointGroup) POST(path string, handler HttpHandler) {
 	g.group.POST(path, func(c *gin.Context) {
 		g.handle(c, handler)
 	})
 }
 
-func (g *ginHttpEndpointGroup) PATCH(path string, handler appy.HttpHandler) {
+func (g *ginHttpEndpointGroup) PATCH(path string, handler HttpHandler) {
 	g.group.PATCH(path, func(c *gin.Context) {
 		g.handle(c, handler)
 	})
 }
 
-func (g *ginHttpEndpointGroup) PUT(path string, handler appy.HttpHandler) {
+func (g *ginHttpEndpointGroup) PUT(path string, handler HttpHandler) {
 	g.group.PUT(path, func(c *gin.Context) {
 		g.handle(c, handler)
 	})
 }
 
-func (g *ginHttpEndpointGroup) DELETE(path string, handler appy.HttpHandler) {
+func (g *ginHttpEndpointGroup) DELETE(path string, handler HttpHandler) {
 	g.group.DELETE(path, func(c *gin.Context) {
 		g.handle(c, handler)
 	})
 }
 
-func (g *ginHttpEndpointGroup) appyCtx(c *gin.Context) appy.HttpContext {
-	return appy.HttpContext{
-		App: g.provider.app,
+func (g *ginHttpEndpointGroup) appyCtx(c *gin.Context) HttpContext {
+	return HttpContext{
 		Header: &ginHeaderParser{
 			ctx: c,
 		},
@@ -93,18 +94,18 @@ func (g *ginHttpEndpointGroup) appyCtx(c *gin.Context) appy.HttpContext {
 	}
 }
 
-func (g *ginHttpEndpointGroup) handle(c *gin.Context, handler appy.HttpHandler) {
-	handlerName := appy.ReflectFunctionName(handler)
-	g.provider.app.Logger.Debug("Handling request: %v", handlerName)
+func (g *ginHttpEndpointGroup) handle(c *gin.Context, handler HttpHandler) {
+	handlerName := appy_utils.ReflectFunctionName(handler)
+	appy_logger.Get().Debug("Handling request: %v", handlerName)
 
 	ctx := g.appyCtx(c)
 
-	ctx.Tracker = g.provider.app.Tracker().OpenScope(handlerName)
+	ctx.Tracker = appy_tracker.Get().OpenScope(handlerName)
 	ctx.Tracker.SetRequest(c.Request)
-	ctx.Transaction = g.provider.app.Tracker().OpenTransaction(ctx.Context, handlerName)
+	ctx.Transaction = appy_tracker.Get().OpenTransaction(ctx.Context, handlerName)
 	defer func() {
 		ctx.Transaction.Finish()
-		g.provider.app.Tracker().Flush()
+		appy_tracker.Get().Flush()
 	}()
 
 	res := g.runPreHandlerMiddleware(&ctx)
@@ -128,7 +129,7 @@ func (g *ginHttpEndpointGroup) handle(c *gin.Context, handler appy.HttpHandler) 
 	g.handleResult(c, ctx.Tracker, handlerRes)
 }
 
-func (g *ginHttpEndpointGroup) handleResult(c *gin.Context, tracker appy.TrackerScope, res appy.HttpResult) {
+func (g *ginHttpEndpointGroup) handleResult(c *gin.Context, tracker appy_tracker.TrackerScope, res HttpResult) {
 	// Unexpected error
 	if res.HasError() {
 		// Try and map the error from the error map
@@ -143,7 +144,7 @@ func (g *ginHttpEndpointGroup) handleResult(c *gin.Context, tracker appy.Tracker
 			},
 		)
 
-		g.provider.app.Logger.Debug("Error in handler: '%v', at: '%v'", res.Error.Error(), res.Tracker.At)
+		appy_logger.Get().Debug("Error in handler: '%v', at: '%v'", res.Error.Error(), res.Tracker.At)
 		tracker.CaptureError(res.Error)
 		return
 	}
@@ -159,7 +160,7 @@ func (g *ginHttpEndpointGroup) handleResult(c *gin.Context, tracker appy.Tracker
 	}
 }
 
-func (g *ginHttpEndpointGroup) runPreHandlerMiddleware(ctx *appy.HttpContext) appy.HttpResult {
+func (g *ginHttpEndpointGroup) runPreHandlerMiddleware(ctx *HttpContext) HttpResult {
 	if g.parent != nil {
 		res := g.parent.runPreHandlerMiddleware(ctx)
 		if res.IsFailed() {
@@ -168,7 +169,7 @@ func (g *ginHttpEndpointGroup) runPreHandlerMiddleware(ctx *appy.HttpContext) ap
 	}
 
 	for _, pre := range g.pre {
-		name := appy.ReflectFunctionName(pre)
+		name := appy_utils.ReflectFunctionName(pre)
 		ctx.Tracker.AddBreadcrumb("Pre middleware", name)
 
 		res := pre(ctx)
@@ -180,9 +181,9 @@ func (g *ginHttpEndpointGroup) runPreHandlerMiddleware(ctx *appy.HttpContext) ap
 	return ctx.Nil()
 }
 
-func (g *ginHttpEndpointGroup) runPostHandlerMiddleware(ctx *appy.HttpContext) appy.HttpResult {
+func (g *ginHttpEndpointGroup) runPostHandlerMiddleware(ctx *HttpContext) HttpResult {
 	for _, post := range g.post {
-		name := appy.ReflectFunctionName(post)
+		name := appy_utils.ReflectFunctionName(post)
 		ctx.Tracker.AddBreadcrumb("Post middleware", name)
 
 		res := post(ctx)

@@ -1,16 +1,15 @@
-package appy_driver_websocket
+package appy_websockets
 
 import (
 	"bytes"
 	"net/http"
 
 	"github.com/gorilla/websocket"
-	"github.com/nfwGytautas/appy"
+	appy_logger "github.com/nfwGytautas/appy/logger"
 )
 
 type websocketFactory struct {
 	upgrader websocket.Upgrader
-	app      *appy.Appy
 	id       uint64
 }
 
@@ -23,26 +22,10 @@ type socket struct {
 	chanClose chan bool
 	chanSend  chan []byte
 
-	options appy.WebsocketOptions
+	options WebsocketOptions
 }
 
-func Factory() appy.WebsocketFactory {
-	return &websocketFactory{
-		upgrader: websocket.Upgrader{
-			// Check origin will check the cross region source
-			CheckOrigin: func(r *http.Request) bool {
-				return true
-			},
-		},
-	}
-}
-
-func (w *websocketFactory) Initialize(app *appy.Appy, options appy.WebsocketFactoryOptions) error {
-	w.app = app
-	return nil
-}
-
-func (w *websocketFactory) Create(options appy.WebsocketOptions) appy.Websocket {
+func (w *websocketFactory) Create(options WebsocketOptions) Websocket {
 	w.id += 1
 
 	return &socket{
@@ -54,12 +37,12 @@ func (w *websocketFactory) Create(options appy.WebsocketOptions) appy.Websocket 
 	}
 }
 
-func (ws *socket) Spin(c *appy.HttpContext) error {
+func (ws *socket) Spin(writer http.ResponseWriter, request *http.Request) error {
 	var err error
 
-	ws.ws, err = ws.factory.upgrader.Upgrade(c.Writer, c.Request, nil)
+	ws.ws, err = ws.factory.upgrader.Upgrade(writer, request, nil)
 	if err != nil {
-		ws.factory.app.Logger.Error("Failed to spin websocket '%v'", err)
+		appy_logger.Get().Error("Failed to spin websocket '%v'", err)
 		return err
 	}
 
@@ -70,17 +53,18 @@ func (ws *socket) Spin(c *appy.HttpContext) error {
 	go ws.readerProcess()
 
 	<-ws.chanClose
-	ws.factory.app.Logger.Debug("Ending socket spin for '%v'", ws.id)
+	appy_logger.Get().Debug("Ending socket spin for '%v'", ws.id)
 
 	err = ws.Close()
 	if err != nil {
-		ws.factory.app.Logger.Error("Failed to close websocket '%v'", err)
+		appy_logger.Get().Error("Failed to close websocket '%v'", err)
 	}
 
 	return err
 }
 
 func (ws *socket) Send(message []byte) {
+	appy_logger.Get().Debug("Sending message '%v' to '%v'", string(message), ws.id)
 	ws.chanSend <- message
 }
 
@@ -97,6 +81,7 @@ func (ws *socket) writerProcess() {
 	for {
 		select {
 		case message, ok := <-ws.chanSend:
+			appy_logger.Get().Debug("[%v] sending '%s'", ws.id, string(message))
 			// c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 
 			if !ok {
@@ -106,22 +91,25 @@ func (ws *socket) writerProcess() {
 
 			w, err := ws.ws.NextWriter(websocket.TextMessage)
 			if err != nil {
-				ws.factory.app.Logger.Error("%v", err)
+				appy_logger.Get().Error("%v", err)
 				return
 			}
 
+			appy_logger.Get().Debug("[%v] writing", ws.id)
 			w.Write(message)
+			w.Write(cNewline)
 
 			// Add queued chat messages to the current websocket message.
 			n := len(ws.chanSend)
+			appy_logger.Get().Debug("[%v] queue backlog: '%v'", ws.id, n)
 			for i := 0; i < n; i++ {
-				w.Write(cNewline)
 				w.Write(<-ws.chanSend)
+				w.Write(cNewline)
 			}
 
 			err = w.Close()
 			if err != nil {
-				ws.factory.app.Logger.Error("%v", err)
+				appy_logger.Get().Error("%v", err)
 				return
 			}
 
@@ -145,7 +133,7 @@ func (ws *socket) readerProcess() {
 				websocket.CloseAbnormalClosure,
 				websocket.CloseNormalClosure,
 			) {
-				ws.factory.app.Logger.Error("Error while reading socket: %v", err)
+				appy_logger.Get().Error("Error while reading socket: %v", err)
 			}
 			break
 		}

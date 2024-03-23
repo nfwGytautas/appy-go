@@ -2,7 +2,7 @@ package driver
 
 import (
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/nfwGytautas/appy"
+	appy_logger "github.com/nfwGytautas/appy/logger"
 )
 
 type InitializeArgs struct {
@@ -12,17 +12,14 @@ type InitializeArgs struct {
 }
 
 var gDatabaseConnection *pgxpool.Pool
-var gLogger appy.Logger
 
-func Initialize(logger appy.Logger, args InitializeArgs) error {
-	gLogger = logger
-
-	gLogger.Info("Initializing driver, version: '%s'", args.Version)
+func Initialize(logger appy_logger.Logger, args InitializeArgs) error {
+	appy_logger.Get().Info("Initializing driver, version: '%s'", args.Version)
 
 	// Open connection
 	err := openConnection(args.ConnectionString)
 	if err != nil {
-		gLogger.Error("Failed to open connection")
+		appy_logger.Get().Error("Failed to open connection")
 		return err
 	}
 
@@ -32,21 +29,21 @@ func Initialize(logger appy.Logger, args InitializeArgs) error {
 	// Check for migration
 	tx, err := StartTransaction()
 	if err != nil {
-		gLogger.Error("Failed to start transaction")
+		appy_logger.Get().Error("Failed to start transaction")
 		return err
 	}
 	defer tx.Rollback()
 
-	gLogger.Info("Migrating database to '%s'", args.Version)
+	appy_logger.Get().Info("Migrating database to '%s'", args.Version)
 	err = args.Migration(tx, currentVersion)
 	if err != nil {
-		gLogger.Error("Failed to migrate to the correct datamodel version")
+		appy_logger.Get().Error("Failed to migrate to the correct datamodel version")
 		return err
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		gLogger.Error("Failed to commit migrations")
+		appy_logger.Get().Error("Failed to commit migrations")
 		return err
 	}
 
