@@ -44,6 +44,7 @@ class DatabaseDriver:
     def __init__(self) -> None:
         self.__depend_list = []
         self.__migration_list = []
+        self.__package_name = ""
 
     def get_name(self) -> str:
         """
@@ -55,7 +56,10 @@ class DatabaseDriver:
         """
         Write base files to the directory
         """
+        self.__package_name = package_name
+
         self.__create_root(out_dir)
+
 
         with open(out_dir + "constants.go", "w+", encoding="utf-8") as f:
             f.write(f"package {package_name}_driver\n")
@@ -136,7 +140,7 @@ class DatabaseDriver:
 
     def __write_implementation_template(self, file: str) -> None:
         with open(file, "w+", encoding="utf-8") as f:
-            f.write("package _driver\n")
+            f.write(f"package {self.__package_name}_driver\n")
             f.write("\n")
             f.write("import (\n")
             f.write('\t"database/sql"\n')
@@ -231,7 +235,7 @@ class DatabaseDriver:
         self.__migration_list.append(migration.name)
 
         with open(f, "a+", encoding="utf-8") as f:
-            f.write("package _driver\n")
+            f.write(f"package {self.__package_name}_driver\n")
             f.write("\n")
             f.write("import (\n")
             f.write('\t"database/sql"\n')
