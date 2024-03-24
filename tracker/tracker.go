@@ -2,6 +2,7 @@ package appy_tracker
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -68,9 +69,9 @@ func (s *sentryScope) SetContext(key string, value map[string]interface{}) {
 	s.scope.SetContext(key, value)
 }
 
-func (s *sentryScope) SetUser(id, username string) {
+func (s *sentryScope) SetUser(id uint64, username string) {
 	s.scope.SetUser(sentry.User{
-		ID:       id,
+		ID:       fmt.Sprintf("%v", id),
 		Username: username,
 	})
 }

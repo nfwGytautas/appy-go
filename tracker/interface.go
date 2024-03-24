@@ -21,7 +21,7 @@ type Tracker interface {
 type TrackerScope interface {
 	SetTag(string, string)
 	SetContext(string, map[string]interface{})
-	SetUser(string, string)
+	SetUser(uint64, string)
 
 	SetRequest(*http.Request)
 

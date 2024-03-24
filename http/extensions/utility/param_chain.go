@@ -46,9 +46,11 @@ func (pc *ParamChain) GetUserID(out *uint64) *ParamChain {
 		return pc
 	}
 
-	userID := token.(appy_middleware.AccessTokenInfo).ID
+	accessToken := token.(appy_middleware.AccessTokenInfo)
 
-	*out = uint64(userID)
+	*out = uint64(accessToken.ID)
+
+	pc.Context.Tracker.SetUser(uint64(accessToken.ID), accessToken.Username)
 
 	return pc
 }

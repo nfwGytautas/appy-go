@@ -14,8 +14,9 @@ import (
 
 // Struct for containing token info
 type AccessTokenInfo struct {
-	ID   uint
-	Role string
+	ID       uint
+	Username string
+	Role     string
 }
 
 type RefreshTokenInfo struct {
@@ -70,12 +71,14 @@ func (j JwtAuth) Authorization(roles []string) appy_http.HttpMiddleware {
 	}
 }
 
-func (j JwtAuth) Generate(id uint, role string) (string, string, error) {
+func (j JwtAuth) Generate(id uint, name, role string) (string, string, error) {
 	token := jwt.New(jwt.SigningMethodHS512)
 	claims := token.Claims.(jwt.MapClaims)
 	claims["sub"] = id
+	claims["name"] = name
 	claims["role"] = role
-	claims["exp"] = time.Now().Add(5 * time.Minute).Unix()
+	// claims["exp"] = time.Now().Add(5 * time.Minute).Unix()
+	claims["exp"] = time.Now().Add(3 * 24 * time.Hour).Unix()
 
 	tokenString, err := token.SignedString([]byte(j.secret))
 	if err != nil {
@@ -123,7 +126,16 @@ func (j JwtAuth) ParseAccessToken(c *appy_http.HttpContext) (AccessTokenInfo, ap
 	}
 
 	result.ID = uint(uid)
-	result.Role = claims["role"].(string)
+
+	nameClaim := claims["name"]
+	roleClaim := claims["role"]
+
+	if nameClaim == nil || roleClaim == nil {
+		return result, c.Fail(http.StatusUnauthorized, "Invalid token, missing claims")
+	}
+
+	result.Username = nameClaim.(string)
+	result.Role = roleClaim.(string)
 
 	return result, c.Nil()
 }

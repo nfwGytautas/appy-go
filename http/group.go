@@ -103,6 +103,7 @@ func (g *ginHttpEndpointGroup) handle(c *gin.Context, handler HttpHandler) {
 	ctx.Tracker = appy_tracker.Get().OpenScope(handlerName)
 	ctx.Tracker.SetRequest(c.Request)
 	ctx.Transaction = appy_tracker.Get().OpenTransaction(ctx.Context, handlerName)
+
 	defer func() {
 		ctx.Transaction.Finish()
 		appy_tracker.Get().Flush()
@@ -144,8 +145,10 @@ func (g *ginHttpEndpointGroup) handleResult(c *gin.Context, tracker appy_tracker
 			},
 		)
 
-		appy_logger.Get().Debug("Error in handler: '%v', at: '%v'", res.Error.Error(), res.Tracker.At)
-		tracker.CaptureError(res.Error)
+		if res.StatusCode >= 500 {
+			tracker.CaptureError(res.Error)
+			appy_logger.Get().Debug("Error in handler: '%v', at: '%v'", res.Error.Error(), res.Tracker.At)
+		}
 		return
 	}
 
