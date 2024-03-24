@@ -3,21 +3,26 @@ package appy_middleware
 import (
 	"crypto/subtle"
 
+	"github.com/gin-gonic/gin"
 	appy_http "github.com/nfwGytautas/appy/http"
 )
 
-func ApiKeyMiddleware(apiKey string, failStatusCode int) appy_http.HttpMiddleware {
-	return func(c *appy_http.HttpContext) error {
+func ApiKeyMiddleware(apiKey string, failStatusCode int) gin.HandlerFunc {
+	return func(c *gin.Context) {
 		// Check header
-		token, err := c.Header.ExpectSingleString("Authorization")
-		if err != nil {
-			return err
+		token := c.GetHeader("Authorization")
+		if token == "" {
+			c.Abort()
+			appy_http.Get().HandleError(c, ErrAuthorizationHeaderMissing)
+			return
 		}
 
 		if subtle.ConstantTimeCompare([]byte(token), []byte(apiKey)) == 0 {
-			return ErrApiKeysDontMatch
+			c.Abort()
+			appy_http.Get().HandleError(c, ErrApiKeysDontMatch)
+			return
 		}
 
-		return nil
+		c.Next()
 	}
 }

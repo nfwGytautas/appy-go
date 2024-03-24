@@ -11,3 +11,5 @@ var ErrTokenMissingClaims = errors.New("token invalid, missing claims")
 var ErrInsufficientPermissions = errors.New("insufficient permissions")
 
 var ErrApiKeysDontMatch = errors.New("api keys don't match")
+
+var ErrAuthorizationHeaderMissing = errors.New("authorization header missing")

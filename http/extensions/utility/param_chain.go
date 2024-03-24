@@ -1,22 +1,30 @@
 package utility
 
 import (
+	"encoding/json"
+	"io"
+	"reflect"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator"
 	"github.com/nfwGytautas/appy/driver"
-	appy_http "github.com/nfwGytautas/appy/http"
 	appy_middleware "github.com/nfwGytautas/appy/http/extensions/middleware"
 )
+
+var validate = validator.New()
 
 // The size of pages for all requests
 const PageSize = 20
 
 // Utility struct for getting required handler parameters
 type ParamChain struct {
-	Context *appy_http.HttpContext
+	Context *gin.Context
 
 	currentError error
 }
 
-func NewParamChain(context *appy_http.HttpContext) *ParamChain {
+func NewParamChain(context *gin.Context) *ParamChain {
 	return &ParamChain{Context: context, currentError: nil}
 }
 
@@ -40,17 +48,14 @@ func (pc *ParamChain) GetUserID(out *uint64) *ParamChain {
 		return pc
 	}
 
-	token, err := pc.Context.Get("accessToken")
-	if err != nil {
-		pc.currentError = err
-		return pc
+	token, exists := pc.Context.Get("accessToken")
+	if !exists {
+		panic("accesToken not found in context")
 	}
 
 	accessToken := token.(appy_middleware.AccessTokenInfo)
 
 	*out = uint64(accessToken.ID)
-
-	pc.Context.Tracker.SetUser(uint64(accessToken.ID), accessToken.Username)
 
 	return pc
 }
@@ -60,9 +65,24 @@ func (pc *ParamChain) GetPage(out *PagingSettings) *ParamChain {
 		return pc
 	}
 
+	pageString := pc.Context.Query("page")
+	if pageString == "" {
+		*out = PagingSettings{
+			Count:  PageSize,
+			Offset: 0,
+		}
+		return pc
+	}
+
+	numericalValue, err := strconv.Atoi(pageString)
+	if err != nil {
+		pc.currentError = err
+		return pc
+	}
+
 	*out = PagingSettings{
 		Count:  PageSize,
-		Offset: uint64(pc.Context.Query.Page()) * PageSize,
+		Offset: uint64(numericalValue) * PageSize,
 	}
 
 	return pc
@@ -73,9 +93,22 @@ func (pc *ParamChain) ReadBodySingle(out any) *ParamChain {
 		return pc
 	}
 
-	err := pc.Context.Body.ParseSingle(out)
+	body, err := io.ReadAll(pc.Context.Request.Body)
 	if err != nil {
 		pc.currentError = err
+		return pc
+	}
+
+	err = json.Unmarshal(body, &out)
+	if err != nil {
+		pc.currentError = err
+		return pc
+	}
+
+	err = validate.Struct(out)
+	if err != nil {
+		pc.currentError = err
+		return pc
 	}
 
 	return pc
@@ -86,9 +119,27 @@ func (pc *ParamChain) ReadBodyArray(out any) *ParamChain {
 		return pc
 	}
 
-	err := pc.Context.Body.ParseArray(out)
+	body, err := io.ReadAll(pc.Context.Request.Body)
 	if err != nil {
 		pc.currentError = err
+		return pc
+	}
+
+	err = json.Unmarshal(body, &out)
+	if err != nil {
+		pc.currentError = err
+		return pc
+	}
+
+	s := reflect.ValueOf(out)
+	s = s.Elem()
+
+	for i := 0; i < s.Len(); i++ {
+		err = validate.Struct(s.Index(i))
+		if err != nil {
+			pc.currentError = err
+			return pc
+		}
 	}
 
 	return pc
@@ -99,13 +150,14 @@ func (pc *ParamChain) ReadPathInt(name string, out *uint64) *ParamChain {
 		return pc
 	}
 
-	value, err := pc.Context.Path.ExpectInt(name)
+	valueStr := pc.Context.Param(name)
+	numericalValue, err := strconv.Atoi(valueStr)
 	if err != nil {
 		pc.currentError = err
 		return pc
 	}
 
-	*out = uint64(value)
+	*out = uint64(numericalValue)
 
 	return pc
 }

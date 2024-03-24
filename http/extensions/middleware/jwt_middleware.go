@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gin-gonic/gin"
 	appy_http "github.com/nfwGytautas/appy/http"
 )
 
@@ -32,35 +33,41 @@ func NewJwtAuth(secret string) JwtAuth {
 	}
 }
 
-func (j JwtAuth) Authentication() appy_http.HttpMiddleware {
-	return func(c *appy_http.HttpContext) error {
+func (j JwtAuth) Authentication() gin.HandlerFunc {
+	return func(c *gin.Context) {
 		info, err := j.ParseAccessToken(c)
 		if err != nil {
-			return err
+			c.Abort()
+			appy_http.Get().HandleError(c, err)
+			return
 		}
 
 		c.Set("accessToken", info)
 
-		return nil
+		c.Next()
 	}
 }
 
-func (j JwtAuth) Authorization(roles []string) appy_http.HttpMiddleware {
-	return func(c *appy_http.HttpContext) error {
+func (j JwtAuth) Authorization(roles []string) gin.HandlerFunc {
+	return func(c *gin.Context) {
 		// Authenticate
 		info, err := j.ParseAccessToken(c)
 		if err != nil {
-			return err
+			c.Abort()
+			appy_http.Get().HandleError(c, err)
+			return
 		}
 
 		// Authorize
 		if !isElementInArray(roles, info.Role) {
-			return ErrInsufficientPermissions
+			c.Abort()
+			appy_http.Get().HandleError(c, ErrInsufficientPermissions)
+			return
 		}
 
 		c.Set("accessToken", info)
 
-		return nil
+		c.Next()
 	}
 }
 
@@ -91,13 +98,13 @@ func (j JwtAuth) Generate(id uint, name, role string) (string, string, error) {
 	return tokenString, refreshTokenString, nil
 }
 
-func (j JwtAuth) ParseAccessToken(c *appy_http.HttpContext) (AccessTokenInfo, error) {
+func (j JwtAuth) ParseAccessToken(c *gin.Context) (AccessTokenInfo, error) {
 	result := AccessTokenInfo{}
 
 	// Token empty check if it is inside Authorization header
-	tokenString, err := c.Header.ExpectSingleString("Authorization")
-	if err != nil {
-		return result, err
+	tokenString := c.GetHeader("Authorization")
+	if tokenString == "" {
+		return result, ErrAuthorizationHeaderMissing
 	}
 
 	// Since this is bearer token we need to parse the token out
@@ -133,23 +140,23 @@ func (j JwtAuth) ParseAccessToken(c *appy_http.HttpContext) (AccessTokenInfo, er
 	return result, nil
 }
 
-func (j JwtAuth) ParseRefreshToken(c *appy_http.HttpContext, token string) (RefreshTokenInfo, appy_http.HttpResult) {
+func (j JwtAuth) ParseRefreshToken(c *gin.Context, token string) (RefreshTokenInfo, error) {
 	result := RefreshTokenInfo{}
 
 	_, claims, err := j.parseToken(token)
 	if err != nil {
-		return result, c.Error(err)
+		return result, err
 	}
 
 	// User id
 	uid, err := strconv.ParseUint(fmt.Sprintf("%.0f", claims["sub"]), 10, 32)
 	if err != nil {
-		return result, c.Error(err)
+		return result, err
 	}
 
 	result.ID = uint(uid)
 
-	return result, c.Nil()
+	return result, nil
 }
 
 func (j JwtAuth) parseToken(tokenString string) (*jwt.Token, jwt.MapClaims, error) {
