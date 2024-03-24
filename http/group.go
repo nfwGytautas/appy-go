@@ -109,9 +109,9 @@ func (g *ginHttpEndpointGroup) handle(c *gin.Context, handler HttpHandler) {
 		appy_tracker.Get().Flush()
 	}()
 
-	res := g.runPreHandlerMiddleware(&ctx)
-	if res.IsFailed() {
-		g.handleResult(c, ctx.Tracker, res)
+	err := g.runPreHandlerMiddleware(&ctx)
+	if err != nil {
+		g.handleResult(c, ctx.Tracker, ctx.Error(err))
 		return
 	}
 
@@ -121,9 +121,9 @@ func (g *ginHttpEndpointGroup) handle(c *gin.Context, handler HttpHandler) {
 		return
 	}
 
-	res = g.runPostHandlerMiddleware(&ctx)
-	if res.IsFailed() {
-		g.handleResult(c, ctx.Tracker, res)
+	err = g.runPostHandlerMiddleware(&ctx)
+	if err != nil {
+		g.handleResult(c, ctx.Tracker, ctx.Error(err))
 		return
 	}
 
@@ -163,11 +163,11 @@ func (g *ginHttpEndpointGroup) handleResult(c *gin.Context, tracker appy_tracker
 	}
 }
 
-func (g *ginHttpEndpointGroup) runPreHandlerMiddleware(ctx *HttpContext) HttpResult {
+func (g *ginHttpEndpointGroup) runPreHandlerMiddleware(ctx *HttpContext) error {
 	if g.parent != nil {
-		res := g.parent.runPreHandlerMiddleware(ctx)
-		if res.IsFailed() {
-			return res
+		err := g.parent.runPreHandlerMiddleware(ctx)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -175,32 +175,32 @@ func (g *ginHttpEndpointGroup) runPreHandlerMiddleware(ctx *HttpContext) HttpRes
 		name := appy_utils.ReflectFunctionName(pre)
 		ctx.Tracker.AddBreadcrumb("Pre middleware", name)
 
-		res := pre(ctx)
-		if res.IsFailed() {
-			return res
+		err := pre(ctx)
+		if err != nil {
+			return err
 		}
 	}
 
-	return ctx.Nil()
+	return nil
 }
 
-func (g *ginHttpEndpointGroup) runPostHandlerMiddleware(ctx *HttpContext) HttpResult {
+func (g *ginHttpEndpointGroup) runPostHandlerMiddleware(ctx *HttpContext) error {
 	for _, post := range g.post {
 		name := appy_utils.ReflectFunctionName(post)
 		ctx.Tracker.AddBreadcrumb("Post middleware", name)
 
-		res := post(ctx)
-		if res.IsFailed() {
-			return res
+		err := post(ctx)
+		if err != nil {
+			return err
 		}
 	}
 
 	if g.parent != nil {
-		res := g.parent.runPostHandlerMiddleware(ctx)
-		if res.IsFailed() {
-			return res
+		err := g.parent.runPostHandlerMiddleware(ctx)
+		if err != nil {
+			return err
 		}
 	}
 
-	return ctx.Nil()
+	return nil
 }

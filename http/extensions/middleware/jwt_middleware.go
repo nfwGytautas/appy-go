@@ -3,7 +3,6 @@ package appy_middleware
 import (
 	"errors"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -27,12 +26,6 @@ type JwtAuth struct {
 	secret string
 }
 
-type tokenInfo struct {
-	jwtToken *jwt.Token
-	claims   jwt.MapClaims
-	expired  bool
-}
-
 func NewJwtAuth(secret string) JwtAuth {
 	return JwtAuth{
 		secret: secret,
@@ -40,34 +33,34 @@ func NewJwtAuth(secret string) JwtAuth {
 }
 
 func (j JwtAuth) Authentication() appy_http.HttpMiddleware {
-	return func(c *appy_http.HttpContext) appy_http.HttpResult {
-		info, res := j.ParseAccessToken(c)
-		if res.IsFailed() {
-			return res
+	return func(c *appy_http.HttpContext) error {
+		info, err := j.ParseAccessToken(c)
+		if err != nil {
+			return err
 		}
 
 		c.Set("accessToken", info)
 
-		return c.Nil()
+		return nil
 	}
 }
 
 func (j JwtAuth) Authorization(roles []string) appy_http.HttpMiddleware {
-	return func(c *appy_http.HttpContext) appy_http.HttpResult {
+	return func(c *appy_http.HttpContext) error {
 		// Authenticate
-		info, res := j.ParseAccessToken(c)
-		if res.IsFailed() {
-			return res
+		info, err := j.ParseAccessToken(c)
+		if err != nil {
+			return err
 		}
 
 		// Authorize
 		if !isElementInArray(roles, info.Role) {
-			return c.Fail(http.StatusUnauthorized, "Access denied, insufficient permissions")
+			return ErrInsufficientPermissions
 		}
 
 		c.Set("accessToken", info)
 
-		return c.Nil()
+		return nil
 	}
 }
 
@@ -98,31 +91,31 @@ func (j JwtAuth) Generate(id uint, name, role string) (string, string, error) {
 	return tokenString, refreshTokenString, nil
 }
 
-func (j JwtAuth) ParseAccessToken(c *appy_http.HttpContext) (AccessTokenInfo, appy_http.HttpResult) {
+func (j JwtAuth) ParseAccessToken(c *appy_http.HttpContext) (AccessTokenInfo, error) {
 	result := AccessTokenInfo{}
 
 	// Token empty check if it is inside Authorization header
 	tokenString, err := c.Header.ExpectSingleString("Authorization")
 	if err != nil {
-		return result, c.Error(err)
+		return result, err
 	}
 
 	// Since this is bearer token we need to parse the token out
 	if len(strings.Split(tokenString, " ")) == 2 {
 		tokenString = strings.Split(tokenString, " ")[1]
 	} else {
-		return result, c.Fail(http.StatusUnauthorized, "Token malformed, could be missing 'Bearer' prefix")
+		return result, ErrTokenMalformed
 	}
 
 	_, claims, err := j.parseToken(tokenString)
 	if err != nil {
-		return result, c.Fail(http.StatusUnauthorized, err.Error())
+		return result, err
 	}
 
 	// User id
 	uid, err := strconv.ParseUint(fmt.Sprintf("%.0f", claims["sub"]), 10, 32)
 	if err != nil {
-		return result, c.Fail(http.StatusUnauthorized, "Invalid token")
+		return result, ErrTokenInvalid
 	}
 
 	result.ID = uint(uid)
@@ -131,13 +124,13 @@ func (j JwtAuth) ParseAccessToken(c *appy_http.HttpContext) (AccessTokenInfo, ap
 	roleClaim := claims["role"]
 
 	if nameClaim == nil || roleClaim == nil {
-		return result, c.Fail(http.StatusUnauthorized, "Invalid token, missing claims")
+		return result, ErrTokenMissingClaims
 	}
 
 	result.Username = nameClaim.(string)
 	result.Role = roleClaim.(string)
 
-	return result, c.Nil()
+	return result, nil
 }
 
 func (j JwtAuth) ParseRefreshToken(c *appy_http.HttpContext, token string) (RefreshTokenInfo, appy_http.HttpResult) {

@@ -7,17 +7,17 @@ import (
 )
 
 func ApiKeyMiddleware(apiKey string, failStatusCode int) appy_http.HttpMiddleware {
-	return func(c *appy_http.HttpContext) appy_http.HttpResult {
+	return func(c *appy_http.HttpContext) error {
 		// Check header
 		token, err := c.Header.ExpectSingleString("Authorization")
 		if err != nil {
-			return c.Error(err)
+			return err
 		}
 
 		if subtle.ConstantTimeCompare([]byte(token), []byte(apiKey)) == 0 {
-			return c.Fail(failStatusCode, "Invalid token")
+			return ErrApiKeysDontMatch
 		}
 
-		return c.Nil()
+		return nil
 	}
 }
