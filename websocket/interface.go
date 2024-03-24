@@ -7,28 +7,10 @@ import (
 )
 
 // Callbacks for websocket close
-type OnCloseCallback func(Websocket)
+type OnCloseCallback func(*Websocket)
 
 // Callback for websocket messages
-type OnMessageCallback func(Websocket, []byte)
-
-// A factory for websocket objects
-type WebsocketFactory interface {
-	// Create a new empty websocket object, without spinning it
-	Create(WebsocketOptions) Websocket
-}
-
-// Websocket object
-type Websocket interface {
-	// Start the websocket
-	Spin(http.ResponseWriter, *http.Request) error
-
-	// Send a message to websocket
-	Send([]byte)
-
-	// Close the websocket
-	Close() error
-}
+type OnMessageCallback func(*Websocket, []byte)
 
 // Options to pass when creating a websocket
 type WebsocketOptions struct {
@@ -41,7 +23,7 @@ type WebsocketOptions struct {
 var factory WebsocketFactory
 
 func Initialize() error {
-	factory = &websocketFactory{
+	factory = WebsocketFactory{
 		upgrader: websocket.Upgrader{
 			// Check origin will check the cross region source
 			CheckOrigin: func(r *http.Request) bool {
@@ -52,6 +34,6 @@ func Initialize() error {
 	return nil
 }
 
-func Get() WebsocketFactory {
-	return factory
+func Get() *WebsocketFactory {
+	return &factory
 }

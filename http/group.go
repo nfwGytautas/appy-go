@@ -16,8 +16,7 @@ type ginHttpEndpointGroup struct {
 	group    *gin.RouterGroup
 	parent   *ginHttpEndpointGroup
 
-	pre  []HttpMiddleware
-	post []HttpMiddleware
+	pre []HttpMiddleware
 }
 
 func (g *ginHttpEndpointGroup) Subgroup(path string) HttpEndpointGroup {
@@ -30,10 +29,6 @@ func (g *ginHttpEndpointGroup) Subgroup(path string) HttpEndpointGroup {
 
 func (g *ginHttpEndpointGroup) Pre(middleware ...HttpMiddleware) {
 	g.pre = append(g.pre, middleware...)
-}
-
-func (g *ginHttpEndpointGroup) Post(middleware ...HttpMiddleware) {
-	g.post = append(g.post, middleware...)
 }
 
 func (g *ginHttpEndpointGroup) StaticFile(path, file string) {
@@ -121,16 +116,10 @@ func (g *ginHttpEndpointGroup) handle(c *gin.Context, handler HttpHandler) {
 		return
 	}
 
-	err = g.runPostHandlerMiddleware(&ctx)
-	if err != nil {
-		g.handleResult(c, ctx.Tracker, ctx.Error(err))
-		return
-	}
-
 	g.handleResult(c, ctx.Tracker, handlerRes)
 }
 
-func (g *ginHttpEndpointGroup) handleResult(c *gin.Context, tracker appy_tracker.TrackerScope, res HttpResult) {
+func (g *ginHttpEndpointGroup) handleResult(c *gin.Context, tracker *appy_tracker.Scope, res HttpResult) {
 	// Unexpected error
 	if res.HasError() {
 		// Try and map the error from the error map
@@ -176,27 +165,6 @@ func (g *ginHttpEndpointGroup) runPreHandlerMiddleware(ctx *HttpContext) error {
 		ctx.Tracker.AddBreadcrumb("Pre middleware", name)
 
 		err := pre(ctx)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (g *ginHttpEndpointGroup) runPostHandlerMiddleware(ctx *HttpContext) error {
-	for _, post := range g.post {
-		name := appy_utils.ReflectFunctionName(post)
-		ctx.Tracker.AddBreadcrumb("Post middleware", name)
-
-		err := post(ctx)
-		if err != nil {
-			return err
-		}
-	}
-
-	if g.parent != nil {
-		err := g.parent.runPostHandlerMiddleware(ctx)
 		if err != nil {
 			return err
 		}

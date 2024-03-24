@@ -8,13 +8,8 @@ import (
 	appy_logger "github.com/nfwGytautas/appy/logger"
 )
 
-type websocketFactory struct {
-	upgrader websocket.Upgrader
-	id       uint64
-}
-
-type socket struct {
-	factory *websocketFactory
+type Websocket struct {
+	factory *WebsocketFactory
 	ws      *websocket.Conn
 
 	id uint64
@@ -25,19 +20,8 @@ type socket struct {
 	options WebsocketOptions
 }
 
-func (w *websocketFactory) Create(options WebsocketOptions) Websocket {
-	w.id += 1
-
-	return &socket{
-		factory:   w,
-		id:        w.id,
-		chanClose: make(chan bool),
-		chanSend:  make(chan []byte),
-		options:   options,
-	}
-}
-
-func (ws *socket) Spin(writer http.ResponseWriter, request *http.Request) error {
+// Start the websocket
+func (ws *Websocket) Spin(writer http.ResponseWriter, request *http.Request) error {
 	var err error
 
 	ws.ws, err = ws.factory.upgrader.Upgrade(writer, request, nil)
@@ -63,16 +47,18 @@ func (ws *socket) Spin(writer http.ResponseWriter, request *http.Request) error 
 	return err
 }
 
-func (ws *socket) Send(message []byte) {
+// Send a message to websocket
+func (ws *Websocket) Send(message []byte) {
 	appy_logger.Get().Debug("Sending message '%v' to '%v'", string(message), ws.id)
 	ws.chanSend <- message
 }
 
-func (ws *socket) Close() error {
+// Close the websocket
+func (ws *Websocket) Close() error {
 	return ws.ws.Close()
 }
 
-func (ws *socket) writerProcess() {
+func (ws *Websocket) writerProcess() {
 	defer func() {
 		ws.chanClose <- true
 	}()
@@ -119,7 +105,7 @@ func (ws *socket) writerProcess() {
 	}
 }
 
-func (ws *socket) readerProcess() {
+func (ws *Websocket) readerProcess() {
 	defer func() {
 		ws.chanClose <- true
 	}()

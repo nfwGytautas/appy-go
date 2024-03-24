@@ -25,8 +25,8 @@ class DatabaseDriver:
             appy_logger "github.com/nfwGytautas/appy/logger"
         )
 
-        func Initialize(logger appy_logger.Logger, connectionString string) error {
-            return driver.Initialize(logger, driver.InitializeArgs{
+        func Initialize(connectionString string) error {
+            return driver.Initialize(driver.InitializeArgs{
                 ConnectionString: connectionString,
                 Version:          DATAMODEL_VERSION,
                 Migration:        g_ROOT_MIGRATION,

@@ -8,7 +8,7 @@ import (
 	appy_utils "github.com/nfwGytautas/appy/utils"
 )
 
-type jobScheduler struct {
+type JobScheduler struct {
 	sync.RWMutex
 
 	stop    chan bool
@@ -27,7 +27,7 @@ type jobEntry struct {
 	tick         time.Duration
 }
 
-func (n *jobScheduler) Add(options JobOptions) {
+func (n *JobScheduler) Add(options JobOptions) {
 	n.Lock()
 	defer n.Unlock()
 
@@ -64,7 +64,7 @@ func (n *jobScheduler) Add(options JobOptions) {
 	}
 }
 
-func (n *jobScheduler) Start() {
+func (n *JobScheduler) Start() {
 	ticker := time.NewTicker(n.poolTick)
 
 	for {
@@ -77,11 +77,11 @@ func (n *jobScheduler) Start() {
 	}
 }
 
-func (n *jobScheduler) Stop() {
+func (n *JobScheduler) Stop() {
 	n.stop <- true
 }
 
-func (n *jobScheduler) handleTick() {
+func (n *JobScheduler) handleTick() {
 	n.Lock()
 	defer n.Unlock()
 

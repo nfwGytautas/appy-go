@@ -13,7 +13,7 @@ type InitializeArgs struct {
 
 var gDatabaseConnection *pgxpool.Pool
 
-func Initialize(logger appy_logger.Logger, args InitializeArgs) error {
+func Initialize(args InitializeArgs) error {
 	appy_logger.Get().Info("Initializing driver, version: '%s'", args.Version)
 
 	// Open connection

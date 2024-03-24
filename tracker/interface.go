@@ -1,41 +1,8 @@
 package appy_tracker
 
 import (
-	"context"
-	"net/http"
-
 	"github.com/getsentry/sentry-go"
 )
-
-// A tracker is a in-house or 3rd party service used to monitor and track the app health, e.g. Sentry
-type Tracker interface {
-	// Open a scope with a given name
-	OpenScope(string) TrackerScope
-	OpenTransaction(context.Context, string) TrackerTransaction
-
-	Flush()
-	ForceFlush()
-}
-
-// A scope
-type TrackerScope interface {
-	SetTag(string, string)
-	SetContext(string, map[string]interface{})
-	SetUser(uint64, string)
-
-	SetRequest(*http.Request)
-
-	AddBreadcrumb(string, string)
-	AddWarning(string, string)
-
-	CaptureError(error)
-}
-
-// Transaction entry for a tracker
-type TrackerTransaction interface {
-	Span(string) TrackerTransaction
-	Finish()
-}
 
 // Options to describe a tracker
 type TrackerOptions struct {
@@ -52,7 +19,7 @@ type TrackerOptions struct {
 var tracker Tracker
 
 func Initialize(options TrackerOptions) error {
-	tracker = &sentryTracker{
+	tracker = Tracker{
 		dsn:        options.DSN,
 		sampleRate: options.SampleRate,
 	}
@@ -69,6 +36,6 @@ func Initialize(options TrackerOptions) error {
 	return nil
 }
 
-func Get() Tracker {
-	return tracker
+func Get() *Tracker {
+	return &tracker
 }

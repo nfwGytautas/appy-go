@@ -51,9 +51,6 @@ type HttpEndpointGroup interface {
 	// Attach pre-handle middleware
 	Pre(...HttpMiddleware)
 
-	// Attach post-handle middleware
-	Post(...HttpMiddleware)
-
 	StaticFile(string, string)
 	StaticDir(string, http.FileSystem)
 
@@ -115,8 +112,8 @@ type HttpContext struct {
 	Writer  http.ResponseWriter
 	Request *http.Request
 
-	Tracker     appy_tracker.TrackerScope
-	Transaction appy_tracker.TrackerTransaction
+	Tracker     *appy_tracker.Scope
+	Transaction *appy_tracker.Transaction
 
 	// Temporary storage to pass from middleware to handler
 	tempStorage map[string]any

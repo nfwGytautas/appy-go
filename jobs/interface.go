@@ -20,18 +20,6 @@ type JobType int
 // A single job, just a simple function
 type Job func()
 
-// Job scheduler used to add and execute jobs in the application
-type JobScheduler interface {
-	// Add a new job to the scheduler of the specified duration
-	Add(JobOptions)
-
-	// Start job execution
-	Start()
-
-	// Stop job execution
-	Stop()
-}
-
 // Options for creating a scheduler
 type JobSchedulerOptions struct {
 	// The duration to wait before executing another cycle of job pool checks
@@ -53,7 +41,7 @@ type JobOptions struct {
 var scheduler JobScheduler
 
 func Initialize(options JobSchedulerOptions) error {
-	scheduler = &jobScheduler{
+	scheduler = JobScheduler{
 		stop:     make(chan bool),
 		poolTick: options.PoolTick,
 	}
@@ -65,6 +53,6 @@ func Initialize(options JobSchedulerOptions) error {
 	return nil
 }
 
-func Get() JobScheduler {
-	return scheduler
+func Get() *JobScheduler {
+	return &scheduler
 }
