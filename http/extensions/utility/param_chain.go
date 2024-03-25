@@ -43,7 +43,7 @@ func (pc *ParamChain) OpenTransaction(out **driver.Tx) *ParamChain {
 	return pc
 }
 
-func (pc *ParamChain) GetUserID(out *uint64) *ParamChain {
+func (pc *ParamChain) GetUser(outId *uint64, outName *string) *ParamChain {
 	if pc.currentError != nil {
 		return pc
 	}
@@ -55,7 +55,8 @@ func (pc *ParamChain) GetUserID(out *uint64) *ParamChain {
 
 	accessToken := token.(appy_middleware.AccessTokenInfo)
 
-	*out = uint64(accessToken.ID)
+	*outId = uint64(accessToken.ID)
+	*outName = accessToken.Username
 
 	return pc
 }
