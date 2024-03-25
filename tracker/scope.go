@@ -8,18 +8,7 @@ import (
 )
 
 type Scope struct {
-	tracker *Tracker
-	hub     *sentry.Hub
-	scope   *sentry.Scope
-}
-
-func newScope(tracker *Tracker) *Scope {
-	hub := sentry.CurrentHub().Clone()
-	return &Scope{
-		tracker: tracker,
-		hub:     hub,
-		scope:   hub.Scope(),
-	}
+	scope *sentry.Scope
 }
 
 func (s *Scope) SetTag(key, value string) {
@@ -55,8 +44,4 @@ func (s *Scope) AddWarning(message, category string) {
 		Category: category,
 		Level:    sentry.LevelWarning,
 	}, 0)
-}
-
-func (s *Scope) CaptureError(err error) {
-	s.hub.CaptureException(err)
 }

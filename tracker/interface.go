@@ -16,14 +16,7 @@ type TrackerOptions struct {
 	FlushInterval int
 }
 
-var tracker Tracker
-
 func Initialize(options TrackerOptions) error {
-	tracker = Tracker{
-		dsn:        options.DSN,
-		sampleRate: options.SampleRate,
-	}
-
 	err := sentry.Init(sentry.ClientOptions{
 		Dsn:              options.DSN,
 		EnableTracing:    true,
@@ -34,8 +27,4 @@ func Initialize(options TrackerOptions) error {
 	}
 
 	return nil
-}
-
-func Get() *Tracker {
-	return &tracker
 }

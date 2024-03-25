@@ -23,7 +23,6 @@ type Websocket struct {
 // Start the websocket
 func (ws *Websocket) Spin(writer http.ResponseWriter, request *http.Request) error {
 	var err error
-
 	ws.ws, err = ws.factory.upgrader.Upgrade(writer, request, nil)
 	if err != nil {
 		appy_logger.Get().Error("Failed to spin websocket '%v'", err)

@@ -55,7 +55,7 @@ func start() {
 	go appy_jobs.Get().Start()
 
 	defer appy_logger.Get().Flush()
-	appy_tracker.Get().ForceFlush()
+	appy_tracker.Flush()
 
 	appy_http.Get().Run()
 

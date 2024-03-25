@@ -7,34 +7,33 @@ import (
 	"github.com/getsentry/sentry-go"
 )
 
-type Tracker struct {
-	dsn        string
-	sampleRate float32
-
-	options TrackerOptions
-
-	currentFlush int
-}
-
-func (s *Tracker) Flush() {
-	if s.currentFlush == 0 {
-		sentry.Flush(5 * time.Second)
-		s.currentFlush = s.options.FlushInterval
-		return
+func Begin(ctx context.Context, name string) (context.Context, Scope, Transaction) {
+	hub := sentry.GetHubFromContext(ctx)
+	if hub == nil {
+		hub = sentry.CurrentHub().Clone()
+		ctx = sentry.SetHubOnContext(ctx, hub)
 	}
-	s.currentFlush -= 1
-}
 
-func (s *Tracker) ForceFlush() {
-	sentry.Flush(5 * time.Second)
-}
+	scope := Scope{
+		scope: hub.Scope(),
+	}
 
-func (s *Tracker) OpenScope(name string) *Scope {
-	scope := newScope(s)
 	scope.SetTag("name", name)
-	return scope
+
+	tx := Transaction{
+		tx: sentry.StartTransaction(ctx,
+			"default",
+		),
+	}
+
+	return tx.tx.Context(), scope, tx
 }
 
-func (s *Tracker) OpenTransaction(ctx context.Context, name string) *Transaction {
-	return newTransaction(s, ctx, name)
+func CaptureError(ctx context.Context, err error) {
+	hub := sentry.GetHubFromContext(ctx)
+	hub.CaptureException(err)
+}
+
+func Flush() {
+	sentry.Flush(5 * time.Second)
 }
