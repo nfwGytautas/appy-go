@@ -2,6 +2,7 @@ package utility
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"reflect"
 	"strconv"
@@ -152,6 +153,11 @@ func (pc *ParamChain) ReadPathInt(name string, out *uint64) *ParamChain {
 	}
 
 	valueStr := pc.Context.Param(name)
+	if valueStr == "" {
+		pc.currentError = errors.New("missing parameter: " + name)
+		return pc
+	}
+
 	numericalValue, err := strconv.Atoi(valueStr)
 	if err != nil {
 		pc.currentError = err
