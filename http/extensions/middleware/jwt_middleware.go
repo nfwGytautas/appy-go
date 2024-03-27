@@ -1,7 +1,6 @@
 package appy_middleware
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -175,27 +174,27 @@ func (j JwtAuth) parseToken(tokenString string) (*jwt.Token, jwt.MapClaims, erro
 	}
 
 	if !jwtToken.Valid {
-		return nil, nil, errors.New("invalid token")
+		return nil, nil, ErrTokenInvalid
 	}
 
 	// Token valid fill token information
 	claims, ok := jwtToken.Claims.(jwt.MapClaims)
 
 	if !ok {
-		return nil, nil, errors.New("failed to get claims")
+		return nil, nil, ErrTokenMissingClaims
 	}
 
 	// Expiration
 	timeStamp := claims["exp"]
 	validity, ok := timeStamp.(float64)
 	if !ok {
-		return nil, nil, errors.New("invalid token")
+		return nil, nil, ErrTokenInvalid
 	}
 
 	tm := time.Unix(int64(validity), 0)
 	remainer := time.Until(tm)
 	if remainer <= 0 {
-		return nil, nil, errors.New("token expired")
+		return nil, nil, ErrTokenExpired
 	}
 
 	return jwtToken, claims, nil
