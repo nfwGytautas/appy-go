@@ -169,6 +169,28 @@ func (pc *ParamChain) ReadPathInt(name string, out *uint64) *ParamChain {
 	return pc
 }
 
+func (pc *ParamChain) ReadQueryInt(name string, out *uint64) *ParamChain {
+	if pc.currentError != nil {
+		return pc
+	}
+
+	valueStr := pc.Context.Query(name)
+	if valueStr == "" {
+		pc.currentError = errors.New("missing parameter: " + name)
+		return pc
+	}
+
+	numericalValue, err := strconv.Atoi(valueStr)
+	if err != nil {
+		pc.currentError = err
+		return pc
+	}
+
+	*out = uint64(numericalValue)
+
+	return pc
+}
+
 func (p *ParamChain) HasError() bool {
 	return p.currentError != nil
 }
