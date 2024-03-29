@@ -22,7 +22,7 @@ func Begin(ctx context.Context, name string) (context.Context, Scope, Transactio
 
 	tx := Transaction{
 		tx: sentry.StartTransaction(ctx,
-			"default",
+			name,
 		),
 	}
 
