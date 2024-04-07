@@ -48,6 +48,7 @@ func (s *Server) HandleError(c *gin.Context, err error) {
 	appy_logger.Get().Error("Error while handling request: '%v:%v', error: '%v'", file, line, err)
 
 	statusCode, body := s.options.Mapper.Map(err)
+	appy_logger.Get().Debug("Error mapped to - status: %v, body: %v", statusCode, body)
 
 	if body != nil {
 		c.JSON(statusCode, body)
