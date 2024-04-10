@@ -1,6 +1,7 @@
 package appy_http
 
 import (
+	"context"
 	"runtime"
 
 	"github.com/gin-gonic/gin"
@@ -43,12 +44,11 @@ func (s *Server) Root() *gin.RouterGroup {
 	return s.engine.Group("/")
 }
 
-func (s *Server) HandleError(c *gin.Context, err error) {
+func (s *Server) HandleError(ctx context.Context, c *gin.Context, err error) {
 	_, file, line, _ := runtime.Caller(1)
 	appy_logger.Get().Error("Error while handling request: '%v:%v', error: '%v'", file, line, err)
 
-	statusCode, body := s.options.Mapper.Map(err)
-	appy_logger.Get().Debug("Error mapped to - status: %v, body: %v", statusCode, body)
+	statusCode, body := s.options.Mapper.Map(ctx, err)
 
 	if body != nil {
 		c.JSON(statusCode, body)

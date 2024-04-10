@@ -1,13 +1,15 @@
 package appy_http
 
 import (
+	"context"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
 // Utility struct for mapping errors to http responses
 type HttpErrorMapper interface {
-	Map(error) (int, any)
+	Map(context.Context, error) (int, any)
 }
 
 var server Server

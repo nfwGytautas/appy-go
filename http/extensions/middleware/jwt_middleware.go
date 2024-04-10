@@ -37,7 +37,7 @@ func (j JwtAuth) Authentication() gin.HandlerFunc {
 		info, err := j.ParseAccessToken(c)
 		if err != nil {
 			c.Abort()
-			appy_http.Get().HandleError(c, err)
+			appy_http.Get().HandleError(c.Request.Context(), c, err)
 			return
 		}
 
@@ -53,14 +53,14 @@ func (j JwtAuth) Authorization(roles []string) gin.HandlerFunc {
 		info, err := j.ParseAccessToken(c)
 		if err != nil {
 			c.Abort()
-			appy_http.Get().HandleError(c, err)
+			appy_http.Get().HandleError(c.Request.Context(), c, err)
 			return
 		}
 
 		// Authorize
 		if !isElementInArray(roles, info.Role) {
 			c.Abort()
-			appy_http.Get().HandleError(c, ErrInsufficientPermissions)
+			appy_http.Get().HandleError(c.Request.Context(), c, ErrInsufficientPermissions)
 			return
 		}
 
