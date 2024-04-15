@@ -3,6 +3,7 @@ package utility
 import (
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"strings"
 
@@ -34,4 +35,10 @@ func StoreMultipartFile(c *gin.Context, key string, outDir string) (string, erro
 
 	// File route
 	return fmt.Sprintf("/images/%v", filename), nil
+}
+
+func UnimplementedEndpoint(c *gin.Context) {
+	c.JSON(http.StatusNotImplemented, gin.H{
+		"message": "This endpoint is not implemented yet",
+	})
 }
