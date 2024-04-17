@@ -3,7 +3,7 @@ package appy_jobs
 import (
 	"time"
 
-	appy_errors "github.com/nfwGytautas/appy/errors"
+	appy_errors "github.com/nfwGytautas/appy-go/errors"
 )
 
 // Possible job types

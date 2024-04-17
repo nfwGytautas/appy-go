@@ -2,7 +2,7 @@ package driver
 
 import (
 	"github.com/jackc/pgx/v5/pgxpool"
-	appy_logger "github.com/nfwGytautas/appy/logger"
+	appy_logger "github.com/nfwGytautas/appy-go/logger"
 )
 
 type InitializeArgs struct {

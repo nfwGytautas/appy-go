@@ -1,4 +1,4 @@
-module github.com/nfwGytautas/appy
+module github.com/nfwGytautas/appy-go
 
 go 1.20
 

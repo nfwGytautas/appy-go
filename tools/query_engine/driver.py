@@ -21,8 +21,8 @@ class DatabaseDriver:
 
     INITIALIZE_CODE = """
         import (
-            "github.com/nfwGytautas/appy/driver"
-            appy_logger "github.com/nfwGytautas/appy/logger"
+            "github.com/nfwGytautas/appy-go/driver"
+            appy_logger "github.com/nfwGytautas/appy-go/logger"
         )
 
         func Initialize(connectionString string) error {
@@ -36,8 +36,8 @@ class DatabaseDriver:
 
     CONSTANTS_CODE = """
         import (
-        \t"github.com/nfwGytautas/appy/driver"
-        \tappy_logger "github.com/nfwGytautas/appy/logger"
+        \t"github.com/nfwGytautas/appy-go/driver"
+        \tappy_logger "github.com/nfwGytautas/appy-go/logger"
         )
     """
 
@@ -145,8 +145,8 @@ class DatabaseDriver:
             f.write("import (\n")
             f.write('\t"database/sql"\n')
             f.write('\t"github.com/jackc/pgx/v5/pgtype"\n')
-            f.write('\t"github.com/nfwGytautas/appy/driver"\n')
-            f.write('\tappy_logger "github.com/nfwGytautas/appy/logger"\n')
+            f.write('\t"github.com/nfwGytautas/appy-go/driver"\n')
+            f.write('\tappy_logger "github.com/nfwGytautas/appy-go/logger"\n')
             f.write(")\n\n")
 
     def __write_query(self, file: str, query: Query) -> None:

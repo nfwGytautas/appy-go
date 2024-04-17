@@ -4,7 +4,7 @@ import (
 	"crypto/subtle"
 
 	"github.com/gin-gonic/gin"
-	appy_http "github.com/nfwGytautas/appy/http"
+	appy_http "github.com/nfwGytautas/appy-go/http"
 )
 
 func ApiKeyMiddleware(apiKey string, failStatusCode int) gin.HandlerFunc {

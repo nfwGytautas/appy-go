@@ -9,8 +9,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator"
-	"github.com/nfwGytautas/appy/driver"
-	appy_middleware "github.com/nfwGytautas/appy/http/extensions/middleware"
+	"github.com/nfwGytautas/appy-go/driver"
+	appy_middleware "github.com/nfwGytautas/appy-go/http/extensions/middleware"
 )
 
 var validate = validator.New()

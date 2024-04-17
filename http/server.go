@@ -5,7 +5,7 @@ import (
 	"runtime"
 
 	"github.com/gin-gonic/gin"
-	appy_logger "github.com/nfwGytautas/appy/logger"
+	appy_logger "github.com/nfwGytautas/appy-go/logger"
 )
 
 // SSLSettings is used to define the settings for a https server

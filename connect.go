@@ -5,11 +5,11 @@ import (
 	"os/signal"
 	"syscall"
 
-	appy_http "github.com/nfwGytautas/appy/http"
-	appy_jobs "github.com/nfwGytautas/appy/jobs"
-	appy_logger "github.com/nfwGytautas/appy/logger"
-	appy_tracker "github.com/nfwGytautas/appy/tracker"
-	appy_websockets "github.com/nfwGytautas/appy/websocket"
+	appy_http "github.com/nfwGytautas/appy-go/http"
+	appy_jobs "github.com/nfwGytautas/appy-go/jobs"
+	appy_logger "github.com/nfwGytautas/appy-go/logger"
+	appy_tracker "github.com/nfwGytautas/appy-go/tracker"
+	appy_websockets "github.com/nfwGytautas/appy-go/websocket"
 )
 
 // Options to pass when creating an appy

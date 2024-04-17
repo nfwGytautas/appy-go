@@ -8,7 +8,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	appy_http "github.com/nfwGytautas/appy/http"
+	appy_http "github.com/nfwGytautas/appy-go/http"
 )
 
 // Struct for containing token info

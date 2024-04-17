@@ -4,8 +4,8 @@ import (
 	"sync"
 	"time"
 
-	appy_logger "github.com/nfwGytautas/appy/logger"
-	appy_utils "github.com/nfwGytautas/appy/utils"
+	appy_logger "github.com/nfwGytautas/appy-go/logger"
+	appy_utils "github.com/nfwGytautas/appy-go/utils"
 )
 
 type JobScheduler struct {

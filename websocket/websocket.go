@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/websocket"
-	appy_logger "github.com/nfwGytautas/appy/logger"
+	appy_logger "github.com/nfwGytautas/appy-go/logger"
 )
 
 type Websocket struct {

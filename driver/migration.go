@@ -1,6 +1,6 @@
 package driver
 
-import appy_logger "github.com/nfwGytautas/appy/logger"
+import appy_logger "github.com/nfwGytautas/appy-go/logger"
 
 type MigrationFn func(*Tx, string) error
 
