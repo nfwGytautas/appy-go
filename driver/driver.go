@@ -1,4 +1,4 @@
-package driver
+package appy_driver
 
 import (
 	"github.com/jackc/pgx/v5/pgxpool"

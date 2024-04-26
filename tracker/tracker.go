@@ -7,26 +7,36 @@ import (
 	"github.com/getsentry/sentry-go"
 )
 
-func Begin(ctx context.Context, name string) (context.Context, Scope, Transaction) {
+type Tracker struct {
+	scope *sentry.Scope
+	spans []*sentry.Span
+}
+
+func Begin(ctx context.Context, name string) (context.Context, Tracker) {
 	hub := sentry.GetHubFromContext(ctx)
 	if hub == nil {
 		hub = sentry.CurrentHub().Clone()
 		ctx = sentry.SetHubOnContext(ctx, hub)
 	}
 
-	scope := Scope{
-		scope: hub.Scope(),
-	}
+	scope := hub.Scope()
 
 	scope.SetTag("name", name)
 
-	tx := Transaction{
-		tx: sentry.StartTransaction(ctx,
-			name,
-		),
-	}
+	tx := sentry.StartTransaction(ctx,
+		name,
+	)
 
-	return tx.tx.Context(), scope, tx
+	return tx.Context(), Tracker{
+		scope: scope,
+		spans: []*sentry.Span{
+			tx,
+		},
+	}
+}
+
+func (t *Tracker) Finish() {
+	t.spans[0].Finish()
 }
 
 func CaptureError(ctx context.Context, err error) {

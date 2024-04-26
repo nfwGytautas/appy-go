@@ -1,4 +1,4 @@
-package driver
+package appy_driver
 
 import appy_logger "github.com/nfwGytautas/appy-go/logger"
 

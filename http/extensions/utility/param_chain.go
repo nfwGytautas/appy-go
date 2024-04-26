@@ -9,7 +9,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator"
-	"github.com/nfwGytautas/appy-go/driver"
 	appy_middleware "github.com/nfwGytautas/appy-go/http/extensions/middleware"
 )
 
@@ -27,21 +26,6 @@ type ParamChain struct {
 
 func NewParamChain(context *gin.Context) *ParamChain {
 	return &ParamChain{Context: context, currentError: nil}
-}
-
-func (pc *ParamChain) OpenTransaction(out **driver.Tx) *ParamChain {
-	if pc.currentError != nil {
-		return pc
-	}
-
-	tx, err := driver.StartTransaction()
-	if err != nil {
-		pc.currentError = err
-	}
-
-	*out = tx
-
-	return pc
 }
 
 func (pc *ParamChain) GetUser(outId *uint64, outName *string) *ParamChain {
@@ -187,6 +171,22 @@ func (pc *ParamChain) ReadQueryInt(name string, out *uint64) *ParamChain {
 	}
 
 	*out = uint64(numericalValue)
+
+	return pc
+}
+
+func (pc *ParamChain) ReadQueryString(name string, out *string) *ParamChain {
+	if pc.currentError != nil {
+		return pc
+	}
+
+	valueStr := pc.Context.Query(name)
+	if valueStr == "" {
+		pc.currentError = errors.New("missing parameter: " + name)
+		return pc
+	}
+
+	*out = valueStr
 
 	return pc
 }

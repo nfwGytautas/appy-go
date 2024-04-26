@@ -1,19 +1,23 @@
 package appy_tracker
 
-import (
-	"github.com/getsentry/sentry-go"
-)
+import "github.com/getsentry/sentry-go"
 
-type Transaction struct {
-	tx *sentry.Span
+func (t *Tracker) PushSpan(name string) {
+	t.spans = append(
+		t.spans,
+		t.spans[len(t.spans)-1].StartChild(
+			"default",
+			sentry.WithTransactionName(name),
+		),
+	)
 }
 
-func (t *Transaction) Span(name string) *Transaction {
-	return &Transaction{
-		tx: t.tx.StartChild("default"),
+func (t *Tracker) PopSpan() {
+	// Leave root
+	if len(t.spans) == 1 {
+		return
 	}
-}
 
-func (t *Transaction) Finish() {
-	t.tx.Finish()
+	t.spans[len(t.spans)-1].Finish()
+	t.spans = t.spans[:len(t.spans)-1]
 }

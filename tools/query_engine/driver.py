@@ -21,12 +21,12 @@ class DatabaseDriver:
 
     INITIALIZE_CODE = """
         import (
-            "github.com/nfwGytautas/appy-go/driver"
+            appy_driver "github.com/nfwGytautas/appy-go/driver"
             appy_logger "github.com/nfwGytautas/appy-go/logger"
         )
 
         func Initialize(connectionString string) error {
-            return driver.Initialize(driver.InitializeArgs{
+            return appy_driver.Initialize(appy_driver.InitializeArgs{
                 ConnectionString: connectionString,
                 Version:          DATAMODEL_VERSION,
                 Migration:        g_ROOT_MIGRATION,
@@ -36,7 +36,7 @@ class DatabaseDriver:
 
     CONSTANTS_CODE = """
         import (
-        \t"github.com/nfwGytautas/appy-go/driver"
+        \tappy_driver "github.com/nfwGytautas/appy-go/driver"
         \tappy_logger "github.com/nfwGytautas/appy-go/logger"
         )
     """
@@ -87,7 +87,7 @@ class DatabaseDriver:
             self._write_constants(f)
             f.write(f'const DATAMODEL_VERSION = "{migration_root[0]}"\n')
             f.write(
-                f'var g_ROOT_MIGRATION driver.MigrationFn = m{migration_root[0]}\n')
+                f'var g_ROOT_MIGRATION appy_driver.MigrationFn = m{migration_root[0]}\n')
 
     def write_queries(self, out_dir: str, queries: List[Query]) -> None:
         """
@@ -146,6 +146,7 @@ class DatabaseDriver:
             f.write('\t"database/sql"\n')
             f.write('\t"github.com/jackc/pgx/v5/pgtype"\n')
             f.write('\t"github.com/nfwGytautas/appy-go/driver"\n')
+            f.write('\tappy_driver "github.com/nfwGytautas/appy-go/driver"\n')
             f.write('\tappy_logger "github.com/nfwGytautas/appy-go/logger"\n')
             f.write(")\n\n")
 
@@ -161,7 +162,7 @@ class DatabaseDriver:
             f.write(f"// Return: '{result.type}'\n")
 
             # Signature
-            f.write(f"func Q{query.name}(tx *driver.Tx")
+            f.write(f"func Q{query.name}(tx *appy_driver.Tx")
 
             for arg in args:
                 if arg.name not in seen_args:
@@ -194,11 +195,11 @@ class DatabaseDriver:
 
     def __get_result_equivalent(self, atype: str) -> str:
         if atype == "Row":
-            return "driver.RowResult"
+            return "appy_driver.RowResult"
         if atype == "Rows":
-            return "driver.RowsResult"
+            return "appy_driver.RowsResult"
         if atype == "Null":
-            return "driver.ExecResult"
+            return "appy_driver.ExecResult"
 
         return "ERROR"
 
@@ -240,11 +241,13 @@ class DatabaseDriver:
             f.write("import (\n")
             f.write('\t"database/sql"\n')
             f.write('\t"github.com/jackc/pgx/v5/pgtype"\n')
+            f.write('\tappy_driver "github.com/nfwGytautas/appy-go/driver"\n')
+            f.write('\tappy_logger "github.com/nfwGytautas/appy-go/logger"\n')
             f.write(")\n\n")
 
             # Function
             f.write(
-                f"func m{migration.name}(tx *driver.Tx, currentVersion string) error ")
+                f"func m{migration.name}(tx *appy_driver.Tx, currentVersion string) error ")
             f.write("{\n")
 
             # Query constant
@@ -277,7 +280,7 @@ class DatabaseDriver:
 
             # Execute migration
             f.write(
-                f'\terr = driver.MigrateToVersion(tx, "{migration.name}", query)\n')
+                f'\terr = appy_driver.MigrateToVersion(tx, "{migration.name}", query)\n')
             f.write('\tif err != nil {')
             f.write('\t\treturn err\n')
             f.write('\t}\n\n')

@@ -1,4 +1,4 @@
-package driver
+package appy_driver
 
 import (
 	"context"
