@@ -74,6 +74,34 @@ func (pc *ParamChain) GetPage(out *PagingSettings) *ParamChain {
 	return pc
 }
 
+func (pc *ParamChain) GetPageSized(out *PagingSettings, size uint64) *ParamChain {
+	if pc.currentError != nil {
+		return pc
+	}
+
+	pageString := pc.Context.Query("page")
+	if pageString == "" {
+		*out = PagingSettings{
+			Count:  size,
+			Offset: 0,
+		}
+		return pc
+	}
+
+	numericalValue, err := strconv.Atoi(pageString)
+	if err != nil {
+		pc.currentError = err
+		return pc
+	}
+
+	*out = PagingSettings{
+		Count:  size,
+		Offset: uint64(numericalValue) * size,
+	}
+
+	return pc
+}
+
 func (pc *ParamChain) ReadBodySingle(out any) *ParamChain {
 	if pc.currentError != nil {
 		return pc
