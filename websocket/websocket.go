@@ -16,6 +16,7 @@ type Websocket struct {
 
 	chanClose chan bool
 	chanSend  chan []byte
+	userClose bool
 
 	options WebsocketOptions
 }
@@ -30,6 +31,8 @@ func (ws *Websocket) Spin(writer http.ResponseWriter, request *http.Request) err
 	}
 
 	defer ws.Close()
+
+	ws.userClose = false
 
 	// Now run read/write process
 	go ws.writerProcess()
@@ -54,6 +57,11 @@ func (ws *Websocket) Send(message []byte) {
 
 // Close the websocket
 func (ws *Websocket) Close() error {
+	if ws.userClose {
+		// Already closed by the user
+		return nil
+	}
+
 	return ws.ws.Close()
 }
 
@@ -118,6 +126,7 @@ func (ws *Websocket) readerProcess() {
 				websocket.CloseAbnormalClosure,
 				websocket.CloseNormalClosure,
 			) {
+				ws.userClose = true
 				appy_logger.Get().Error("Error while reading socket: %v", err)
 			}
 			break
