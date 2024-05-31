@@ -5,3 +5,13 @@ func SetFieldIfNotNull[T any](field *T, value *T) {
 		*field = *value
 	}
 }
+
+func InArray[T comparable](value T, array []T) bool {
+	for _, v := range array {
+		if v == value {
+			return true
+		}
+	}
+
+	return false
+}
