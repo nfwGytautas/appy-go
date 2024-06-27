@@ -12,13 +12,13 @@ type HttpErrorMapper interface {
 	Map(context.Context, error) (int, any)
 }
 
-var server Server
+var server *Server
 
 func Initialize(options HttpOptions) error {
 	e := gin.Default()
 	e.Use(cors.Default())
 
-	server = Server{
+	server = &Server{
 		engine:  e,
 		options: options,
 	}
@@ -27,5 +27,5 @@ func Initialize(options HttpOptions) error {
 }
 
 func Get() *Server {
-	return &server
+	return server
 }

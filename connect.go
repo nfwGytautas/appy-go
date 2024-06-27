@@ -68,10 +68,12 @@ func start() {
 		appy_tracker.Flush()
 	}
 
-	appy_http.Get().Run()
-
-	// appy_logger.Get().Info("No HTTP server available, running till signal (Ctrl+C)")
-	// waitForSignal()
+	if appy_http.Get() != nil {
+		appy_http.Get().Run()
+	} else {
+		appy_logger.Get().Info("No HTTP server available, running till signal (Ctrl+C)")
+		waitForSignal()
+	}
 }
 
 func waitForSignal() {
