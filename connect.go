@@ -26,14 +26,18 @@ func Initialize(options AppyOptions) {
 		panic(err)
 	}
 
-	err = appy_jobs.Initialize(*options.Jobs)
-	if err != nil {
-		panic(err)
+	if options.Jobs != nil {
+		err = appy_jobs.Initialize(*options.Jobs)
+		if err != nil {
+			panic(err)
+		}
 	}
 
-	err = appy_tracker.Initialize(*options.Tracker)
-	if err != nil {
-		panic(err)
+	if options.Tracker != nil {
+		err = appy_tracker.Initialize(*options.Tracker)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	err = appy_websockets.Initialize()
@@ -41,9 +45,11 @@ func Initialize(options AppyOptions) {
 		panic(err)
 	}
 
-	err = appy_http.Initialize(*options.HTTP)
-	if err != nil {
-		panic(err)
+	if options.HTTP != nil {
+		err = appy_http.Initialize(*options.HTTP)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -52,10 +58,15 @@ func Takeover() {
 }
 
 func start() {
-	go appy_jobs.Get().Start()
+	if appy_jobs.Get() != nil {
+		go appy_jobs.Get().Start()
+	}
 
 	defer appy_logger.Get().Flush()
-	appy_tracker.Flush()
+
+	if !appy_tracker.IsInitialized() {
+		appy_tracker.Flush()
+	}
 
 	appy_http.Get().Run()
 

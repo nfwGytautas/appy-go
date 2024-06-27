@@ -16,6 +16,8 @@ type TrackerOptions struct {
 	FlushInterval int
 }
 
+var initialized = false
+
 func Initialize(options TrackerOptions) error {
 	err := sentry.Init(sentry.ClientOptions{
 		Dsn:              options.DSN,
@@ -26,5 +28,11 @@ func Initialize(options TrackerOptions) error {
 		return err
 	}
 
+	initialized = true
+
 	return nil
+}
+
+func IsInitialized() bool {
+	return initialized
 }

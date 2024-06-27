@@ -38,10 +38,10 @@ type JobOptions struct {
 	Type JobType
 }
 
-var scheduler JobScheduler
+var scheduler *JobScheduler
 
 func Initialize(options JobSchedulerOptions) error {
-	scheduler = JobScheduler{
+	scheduler = &JobScheduler{
 		stop:     make(chan bool),
 		poolTick: options.PoolTick,
 	}
@@ -54,5 +54,5 @@ func Initialize(options JobSchedulerOptions) error {
 }
 
 func Get() *JobScheduler {
-	return &scheduler
+	return scheduler
 }
