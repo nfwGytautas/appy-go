@@ -37,7 +37,7 @@ class DatabaseDriver:
     CONSTANTS_CODE = """
         import (
         \tappy_driver "github.com/nfwGytautas/appy-go/driver"
-        \tappy_logger "github.com/nfwGytautas/appy-go/logger"
+        \tappy "github.com/nfwGytautas/appy"
         )
     """
 
@@ -187,7 +187,7 @@ class DatabaseDriver:
             f.write(f'\tconst query = {self._format_query(query.content)}\n')
 
             # Logging
-            f.write(f'\tappy_logger.Get().Info("Executing \'{query.name}\'")\n')
+            f.write(f'\tappy_logger.Logger().Info("Executing \'{query.name}\'")\n')
 
             self.__write_implementation(f, result, args_string)
 
@@ -258,14 +258,14 @@ class DatabaseDriver:
             # Version check
             f.write(f'\n\tif currentVersion == "{migration.name}" ')
             f.write("{\n")
-            f.write('\t\tappy_logger.Get().Info("    - Already at this version")\n')
+            f.write('\t\tappy_logger.Logger().Info("    - Already at this version")\n')
             f.write("\t\treturn nil\n")
             f.write("\t}\n")
 
             # Dependancy
             if deps != "":
                 # Logging
-                f.write(f'\n\tappy_logger.Get().Info("  - Dependency to \'{deps}\'")\n')
+                f.write(f'\n\tappy_logger.Logger().Info("  - Dependency to \'{deps}\'")\n')
 
                 f.write(f"\n\terr = m{deps}(tx, currentVersion)\n")
                 f.write("\tif err != nil {\n")
@@ -276,7 +276,7 @@ class DatabaseDriver:
 
             # Logging
             f.write(
-                f'\n\tappy_logger.Get().Info("  - Migrating to \'{migration.name}\'")\n\n')
+                f'\n\tappy_logger.Logger().Info("  - Migrating to \'{migration.name}\'")\n\n')
 
             # Execute migration
             f.write(

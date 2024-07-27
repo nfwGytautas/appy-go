@@ -1,6 +1,7 @@
-package appy_middleware
+package appy
 
 import (
+	"crypto/subtle"
 	"fmt"
 	"strconv"
 	"strings"
@@ -8,7 +9,6 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	appy_http "github.com/nfwGytautas/appy-go/http"
 )
 
 // Struct for containing token info
@@ -37,7 +37,7 @@ func (j JwtAuth) Authentication() gin.HandlerFunc {
 		info, err := j.ParseAccessToken(c)
 		if err != nil {
 			c.Abort()
-			appy_http.Get().HandleError(c.Request.Context(), c, err)
+			HTTP().HandleError(c.Request.Context(), c, err)
 			return
 		}
 
@@ -53,14 +53,14 @@ func (j JwtAuth) Authorization(roles []string) gin.HandlerFunc {
 		info, err := j.ParseAccessToken(c)
 		if err != nil {
 			c.Abort()
-			appy_http.Get().HandleError(c.Request.Context(), c, err)
+			HTTP().HandleError(c.Request.Context(), c, err)
 			return
 		}
 
 		// Authorize
 		if !isElementInArray(roles, info.Role) {
 			c.Abort()
-			appy_http.Get().HandleError(c.Request.Context(), c, ErrInsufficientPermissions)
+			HTTP().HandleError(c.Request.Context(), c, ErrInsufficientPermissions)
 			return
 		}
 
@@ -199,12 +199,22 @@ func (j JwtAuth) parseToken(tokenString string) (*jwt.Token, jwt.MapClaims, erro
 	return jwtToken, claims, nil
 }
 
-func isElementInArray[T comparable](arr []T, val T) bool {
-	for _, element := range arr {
-		if element == val {
-			return true
+func HttpMiddlewareApiKey(apiKey string, failStatusCode int) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Check header
+		token := c.GetHeader("Authorization")
+		if token == "" {
+			c.Abort()
+			HTTP().HandleError(c.Request.Context(), c, ErrAuthorizationHeaderMissing)
+			return
 		}
-	}
 
-	return false
+		if subtle.ConstantTimeCompare([]byte(token), []byte(apiKey)) == 0 {
+			c.Abort()
+			HTTP().HandleError(c.Request.Context(), c, ErrApiKeysDontMatch)
+			return
+		}
+
+		c.Next()
+	}
 }

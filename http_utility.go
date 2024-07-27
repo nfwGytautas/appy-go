@@ -1,15 +1,19 @@
-package utility
+package appy
 
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"net/http"
+	"os"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator"
-	appy_middleware "github.com/nfwGytautas/appy-go/http/extensions/middleware"
+	"github.com/google/uuid"
 )
 
 var validate = validator.New()
@@ -22,6 +26,15 @@ type ParamChain struct {
 	Context *gin.Context
 
 	currentError error
+}
+
+type PagingSettings struct {
+	Offset uint64
+	Count  uint64
+}
+
+func (ps PagingSettings) String() string {
+	return fmt.Sprintf("{Offset: %v, Count: %v}", ps.Offset, ps.Count)
 }
 
 func NewParamChain(context *gin.Context) *ParamChain {
@@ -38,7 +51,7 @@ func (pc *ParamChain) GetUser(outId *uint64, outName *string) *ParamChain {
 		panic("accesToken not found in context")
 	}
 
-	accessToken := token.(appy_middleware.AccessTokenInfo)
+	accessToken := token.(AccessTokenInfo)
 
 	*outId = uint64(accessToken.ID)
 	*outName = accessToken.Username
@@ -225,4 +238,36 @@ func (p *ParamChain) HasError() bool {
 
 func (p *ParamChain) Error() error {
 	return p.currentError
+}
+
+func StoreMultipartFile(c *gin.Context, key string, outDir string) (string, error) {
+	file, header, err := c.Request.FormFile(key)
+	if err != nil {
+		return "", err
+	}
+
+	// Create a name uuid
+	extension := strings.Split(header.Filename, ".")[1]
+	filename := uuid.New().String() + "." + extension
+
+	// Store locally
+	out, err := os.Create(outDir + filename)
+	if err != nil {
+		return "", err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, file)
+	if err != nil {
+		return "", err
+	}
+
+	// File route
+	return fmt.Sprintf("/images/%v", filename), nil
+}
+
+func UnimplementedEndpoint(c *gin.Context) {
+	c.JSON(http.StatusNotImplemented, gin.H{
+		"message": "This endpoint is not implemented yet",
+	})
 }

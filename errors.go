@@ -1,4 +1,4 @@
-package appy_middleware
+package appy
 
 import "errors"
 

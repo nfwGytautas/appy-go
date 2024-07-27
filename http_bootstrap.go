@@ -6,7 +6,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	appy_driver "github.com/nfwGytautas/appy-go/driver"
-	appy_http "github.com/nfwGytautas/appy-go/http"
 	appy_logger "github.com/nfwGytautas/appy-go/logger"
 	appy_tracker "github.com/nfwGytautas/appy-go/tracker"
 	appy_utils "github.com/nfwGytautas/appy-go/utils"
@@ -27,7 +26,7 @@ func AppyHttpBootstrap(handler HttpHandler) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Debug
 		currentFunctionName := appy_utils.ReflectFunctionName(handler)
-		appy_logger.Get().Debug("Running: '%v'", currentFunctionName)
+		appy_logger.Logger().Debug("Running: '%v'", currentFunctionName)
 
 		// Tracker setup
 		ctx, tracker := appy_tracker.Begin(c.Request.Context(), currentFunctionName)
@@ -38,7 +37,7 @@ func AppyHttpBootstrap(handler HttpHandler) gin.HandlerFunc {
 		// DB Transaction setup
 		tx, err := appy_driver.StartTransaction()
 		if err != nil {
-			appy_http.Get().HandleError(ctx, c, err)
+			HTTP().HandleError(ctx, c, err)
 			return
 		}
 
@@ -63,7 +62,7 @@ func AppyHttpBootstrap(handler HttpHandler) gin.HandlerFunc {
 		err = tx.Commit()
 		if err != nil {
 			tx.Rollback()
-			appy_http.Get().HandleError(ctx, c, err)
+			HTTP().HandleError(ctx, c, err)
 			return
 		}
 	}
@@ -73,7 +72,7 @@ func AppyWsBootstrap(handler WsHandler) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Debug
 		currentFunctionName := appy_utils.ReflectFunctionName(handler)
-		appy_logger.Get().Debug("Running: '%v'", currentFunctionName)
+		appy_logger.Logger().Debug("Running: '%v'", currentFunctionName)
 
 		// Tracker setup
 		ctx, tracker := appy_tracker.Begin(c.Request.Context(), currentFunctionName)
@@ -84,7 +83,7 @@ func AppyWsBootstrap(handler WsHandler) gin.HandlerFunc {
 		// DB Transaction setup
 		tx, err := appy_driver.StartTransaction()
 		if err != nil {
-			appy_http.Get().HandleError(ctx, c, err)
+			HTTP().HandleError(ctx, c, err)
 			return
 		}
 
@@ -109,14 +108,14 @@ func AppyWsBootstrap(handler WsHandler) gin.HandlerFunc {
 		err = tx.Commit()
 		if err != nil {
 			tx.Rollback()
-			appy_http.Get().HandleError(ctx, c, err)
+			HTTP().HandleError(ctx, c, err)
 			return
 		}
 
 		// Socket code
 		err = socketFn(c, ctx)
 		if err != nil {
-			appy_http.Get().HandleError(ctx, c, err)
+			HTTP().HandleError(ctx, c, err)
 			return
 		}
 	}
