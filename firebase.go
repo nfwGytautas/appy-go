@@ -33,7 +33,7 @@ type firebaseWrapper struct {
 
 var firebaseInstance firebaseWrapper = firebaseWrapper{}
 
-// Get firebase app instance, 'ConfigureFirebase' must be called first, or this will return nil
+// Get firebase app instance
 func Firebase() *firebaseWrapper {
 	return &firebaseInstance
 }
