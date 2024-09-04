@@ -35,22 +35,22 @@ func (mw *mailerliteWrapper) Configure(opts MailerLiteOptions) error {
 	return nil
 }
 
-func (mw *mailerliteWrapper) CreateSubscriber(ctx context.Context, email string, fields MailerliteFields) error {
+func (mw *mailerliteWrapper) CreateSubscriber(ctx context.Context, email string, fields MailerliteFields) (string, error) {
 	subscriber := &mailerlite.Subscriber{
 		Email:  email,
 		Fields: fields,
 	}
 
-	_, res, err := mw.client.Subscriber.Create(ctx, subscriber)
+	sub, res, err := mw.client.Subscriber.Create(ctx, subscriber)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if res.StatusCode >= 400 {
-		return errors.New("failed to create subscriber (mailerlite bad response): " + res.Status)
+		return "", errors.New("failed to create subscriber (mailerlite bad response): " + res.Status)
 	}
 
-	return nil
+	return sub.Data.ID, nil
 }
 
 func (mw *mailerliteWrapper) DeleteSubscriber(ctx context.Context, email string) error {
@@ -118,4 +118,30 @@ func (mw *mailerliteWrapper) GetGroups(ctx context.Context) ([]mailerlite.Group,
 	}
 
 	return groups.Data, nil
+}
+
+func (mw *mailerliteWrapper) AddToGroup(ctx context.Context, groupId string, subscriber string) error {
+	_, res, err := mw.client.Group.Assign(ctx, groupId, subscriber)
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode >= 400 {
+		return errors.New("failed to add subscriber to group (mailerlite bad response): " + res.Status)
+	}
+
+	return nil
+}
+
+func (mw *mailerliteWrapper) RemoveFromGroup(ctx context.Context, groupId string, subscriber string) error {
+	res, err := mw.client.Group.UnAssign(ctx, groupId, subscriber)
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode >= 400 {
+		return errors.New("failed to remove subscriber from group (mailerlite bad response): " + res.Status)
+	}
+
+	return nil
 }
