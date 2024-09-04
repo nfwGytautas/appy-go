@@ -87,3 +87,35 @@ func (mw *mailerliteWrapper) GetSubscriber(ctx context.Context, email string) (*
 
 	return &subscriber.Data, nil
 }
+
+func (mw *mailerliteWrapper) CreateGroup(ctx context.Context, name string) (*mailerlite.Group, error) {
+	group, res, err := mw.client.Group.Create(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+
+	if res.StatusCode >= 400 {
+		return nil, errors.New("failed to create group (mailerlite bad response): " + res.Status)
+	}
+
+	return &group.Data, nil
+}
+
+func (mw *mailerliteWrapper) GetGroups(ctx context.Context) ([]mailerlite.Group, error) {
+	listOptions := &mailerlite.ListGroupOptions{
+		Page:  1,
+		Limit: 1000,
+		Sort:  mailerlite.SortByName,
+	}
+
+	groups, res, err := mw.client.Group.List(ctx, listOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	if res.StatusCode >= 400 {
+		return nil, errors.New("failed to get groups (mailerlite bad response): " + res.Status)
+	}
+
+	return groups.Data, nil
+}
