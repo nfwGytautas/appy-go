@@ -76,7 +76,7 @@ func (j JwtAuth) Generate(id uint, name, role string) (string, string, error) {
 	claims["sub"] = id
 	claims["name"] = name
 	claims["role"] = role
-	claims["exp"] = time.Now().Add(24 * time.Hour).Unix()
+	claims["exp"] = time.Now().Add(1 * time.Minute).Unix()
 
 	tokenString, err := token.SignedString([]byte(j.secret))
 	if err != nil {

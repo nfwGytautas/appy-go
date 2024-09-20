@@ -5,9 +5,9 @@ import (
 	"os"
 	"time"
 
-	firebase "firebase.google.com/go"
-	"firebase.google.com/go/auth"
-	"firebase.google.com/go/messaging"
+	firebase "firebase.google.com/go/v4"
+	"firebase.google.com/go/v4/auth"
+	"firebase.google.com/go/v4/messaging"
 	"google.golang.org/api/option"
 )
 
