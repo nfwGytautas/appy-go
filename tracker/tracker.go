@@ -35,12 +35,28 @@ func Begin(ctx context.Context, name string) (context.Context, Tracker) {
 	}
 }
 
+func BeginDummy() Tracker {
+	return Tracker{
+		scope: nil,
+		spans: nil,
+	}
+}
+
 func (t *Tracker) Finish() {
+	if t.scope == nil {
+		return
+	}
+
 	t.spans[0].Finish()
 }
 
 func CaptureError(ctx context.Context, err error) {
 	hub := sentry.GetHubFromContext(ctx)
+
+	if hub == nil {
+		return
+	}
+
 	hub.CaptureException(err)
 }
 

@@ -22,6 +22,11 @@ type statusHijacker struct {
 	body       []byte
 }
 
+type BootstrapConfig struct {
+	Tracked     bool
+	Transaction bool
+}
+
 func AppyHttpBootstrap(handler HttpHandler) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Debug
@@ -64,6 +69,67 @@ func AppyHttpBootstrap(handler HttpHandler) gin.HandlerFunc {
 			tx.Rollback()
 			HTTP().HandleError(ctx, c, err)
 			return
+		}
+	}
+}
+
+func AppyHttpBootstrapConfig(handler HttpHandler, config BootstrapConfig) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var err error
+		var tracker appy_tracker.Tracker
+		var tx *appy_driver.Tx
+
+		// Debug
+		currentFunctionName := appy_utils.ReflectFunctionName(handler)
+		appy_logger.Logger().Debug("Running: '%v'", currentFunctionName)
+
+		ctx := c.Request.Context()
+
+		if config.Tracked {
+			ctx, tracker = appy_tracker.Begin(c.Request.Context(), currentFunctionName)
+			defer tracker.Finish()
+
+			tracker.SetRequest(c.Request)
+		} else {
+			tracker = appy_tracker.BeginDummy()
+		}
+
+		// DB Transaction setup
+		if config.Transaction {
+			tx, err = appy_driver.StartTransaction()
+			if err != nil {
+				HTTP().HandleError(ctx, c, err)
+				return
+			}
+		} else {
+			tx = nil
+		}
+
+		statusHijacker := statusHijacker{
+			ResponseWriter: c.Writer,
+			statusCode:     http.StatusOK,
+			body:           nil,
+		}
+
+		defer statusHijacker.FlushHijack()
+
+		c.Writer = &statusHijacker
+
+		// Handler code
+		handler(c, ctx, tx, tracker)
+
+		if statusHijacker.statusCode >= 400 {
+			tx.Rollback()
+			return
+		}
+
+		if config.Transaction {
+			err = tx.Commit()
+			if err != nil {
+				tx.Rollback()
+				HTTP().HandleError(ctx, c, err)
+				return
+			}
 		}
 	}
 }
