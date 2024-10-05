@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator"
@@ -228,6 +229,28 @@ func (pc *ParamChain) ReadQueryString(name string, out *string) *ParamChain {
 	}
 
 	*out = valueStr
+
+	return pc
+}
+
+func (pc *ParamChain) ReadQueryTime(name string, out *time.Time) *ParamChain {
+	if pc.currentError != nil {
+		return pc
+	}
+
+	valueStr := pc.Context.Query(name)
+	if valueStr == "" {
+		pc.currentError = errors.New("missing parameter: " + name)
+		return pc
+	}
+
+	time, err := time.Parse(time.RFC3339, valueStr)
+	if err != nil {
+		pc.currentError = err
+		return pc
+	}
+
+	*out = time
 
 	return pc
 }
