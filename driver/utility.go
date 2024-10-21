@@ -47,7 +47,7 @@ type ExecFn func(*Tx, ...any) (ExecResult, error)
 
 type QueryFn[Rt Scannable] func(*Tx, ...any) (Rt, error)
 
-func QueryRows[T any, Rt Scannable](tx *Tx, scanFn ScanFn[T], query QueryFn[Rt], args ...any) ([]T, error) {
+func QueryAndParse[T any, Rt Scannable](tx *Tx, scanFn ScanFn[T], query QueryFn[Rt], args ...any) ([]T, error) {
 	res, err := query(tx, args...)
 	if err != nil {
 		return nil, err

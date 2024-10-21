@@ -18,6 +18,9 @@ type JobOptions struct {
 
 	// The duration to wait before executing the job
 	Tick time.Duration
+
+	// If specified the job will be executed using cron scheduler
+	Cron string
 }
 
 var scheduler *JobScheduler
