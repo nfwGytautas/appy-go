@@ -199,7 +199,19 @@ func (j JwtAuth) parseToken(tokenString string) (*jwt.Token, jwt.MapClaims, erro
 	return jwtToken, claims, nil
 }
 
-func HttpMiddlewareApiKey(apiKey string, failStatusCode int) gin.HandlerFunc {
+type ApiKeyMiddlewareProvider struct {
+	apiKey         string
+	failStatusCode int
+}
+
+func NewApiKeyMiddlewareProvider(apiKey string, failStatusCode int) ApiKeyMiddlewareProvider {
+	return ApiKeyMiddlewareProvider{
+		apiKey:         apiKey,
+		failStatusCode: failStatusCode,
+	}
+}
+
+func (akmp ApiKeyMiddlewareProvider) Provide() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Check header
 		token := c.GetHeader("Authorization")
@@ -209,7 +221,7 @@ func HttpMiddlewareApiKey(apiKey string, failStatusCode int) gin.HandlerFunc {
 			return
 		}
 
-		if subtle.ConstantTimeCompare([]byte(token), []byte(apiKey)) == 0 {
+		if subtle.ConstantTimeCompare([]byte(token), []byte(akmp.apiKey)) == 0 {
 			c.Abort()
 			HTTP().HandleError(c.Request.Context(), c, ErrApiKeysDontMatch)
 			return
