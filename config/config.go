@@ -10,6 +10,8 @@ type SSLSettings struct {
 type HttpConfig struct {
 	Address string
 	SSL     *SSLSettings
+
+	ErrorMapper HttpErrorMapper
 }
 
 // Configure the appy app

@@ -5,6 +5,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	appy_config "github.com/nfwGytautas/appy-go/config"
 	appy_jobs "github.com/nfwGytautas/appy-go/jobs"
 	appy_logger "github.com/nfwGytautas/appy-go/logger"
 	appy_tracker "github.com/nfwGytautas/appy-go/tracker"
@@ -13,7 +14,7 @@ import (
 // Options to pass when creating an appy
 type AppyOptions struct {
 	Environment EnvironmentSettings
-	HTTP        *HttpOptions
+	HTTP        *appy_config.HttpConfig
 	Jobs        *appy_jobs.JobSchedulerOptions
 	Tracker     *appy_tracker.TrackerOptions
 }

@@ -6,17 +6,13 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	appy_config "github.com/nfwGytautas/appy-go/config"
 	appy_logger "github.com/nfwGytautas/appy-go/logger"
 )
 
-// Utility struct for mapping errors to http responses
-type HttpErrorMapper interface {
-	Map(context.Context, error) (int, any)
-}
-
 var server *Server
 
-func InitializeHTTP(options HttpOptions) error {
+func InitializeHTTP(options appy_config.HttpConfig) error {
 	e := gin.Default()
 	e.Use(cors.Default())
 
@@ -32,26 +28,9 @@ func HTTP() *Server {
 	return server
 }
 
-// SSLSettings is used to define the settings for a https server
-type SSLSettings struct {
-	CertFile string
-	KeyFile  string
-}
-
-// Options when creating a new http server
-type HttpOptions struct {
-	Mapper HttpErrorMapper
-
-	// The address to bind the server to
-	Address string
-
-	// SSL settings for HTTPS, runs on HTTP if nil
-	SSL *SSLSettings
-}
-
 type Server struct {
 	engine  *gin.Engine
-	options HttpOptions
+	options appy_config.HttpConfig
 }
 
 func (s *Server) Run() error {
@@ -72,7 +51,7 @@ func (s *Server) HandleError(ctx context.Context, c *gin.Context, err error) {
 	_, file, line, _ := runtime.Caller(1)
 	appy_logger.Logger().Error("Error while handling request: '%v:%v', error: '%v'", file, line, err)
 
-	statusCode, body := s.options.Mapper.Map(ctx, err)
+	statusCode, body := s.options.ErrorMapper.Map(ctx, err)
 
 	if body != nil {
 		c.JSON(statusCode, body)
