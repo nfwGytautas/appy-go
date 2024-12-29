@@ -217,6 +217,29 @@ func (pc *ParamChain) ReadQueryInt(name string, out *uint64) *ParamChain {
 	return pc
 }
 
+func (pc *ParamChain) ReadOptionalQueryInt(name string, out **uint64) *ParamChain {
+	if pc.currentError != nil {
+		return pc
+	}
+
+	valueStr := pc.Context.Query(name)
+	if valueStr == "" {
+		*out = nil
+		return pc
+	}
+
+	numericalValue, err := strconv.Atoi(valueStr)
+	if err != nil {
+		pc.currentError = err
+		return pc
+	}
+
+	value := uint64(numericalValue)
+	*out = &value
+
+	return pc
+}
+
 func (pc *ParamChain) ReadQueryString(name string, out *string) *ParamChain {
 	if pc.currentError != nil {
 		return pc

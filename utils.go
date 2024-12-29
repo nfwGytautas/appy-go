@@ -24,3 +24,27 @@ func SafeRandomString(length int) (string, error) {
 
 	return base64.URLEncoding.EncodeToString(bytes)[:length], nil
 }
+
+type SelectorFn[T any, R any] func(*T) *R
+
+func SelectFromArray[T any, R any](entries []T, selectorFn SelectorFn[T, R]) []R {
+	result := make([]R, 0, len(entries))
+	for i := range entries {
+		res := selectorFn(&entries[i])
+		if res != nil {
+			result = append(result, *res)
+		}
+	}
+
+	return result
+}
+
+type MapFn[T any, R any] func(*T, *R)
+
+func MapEntries[T any, R any](entriesToMap []T, mappables []R, mapFn MapFn[T, R]) {
+	for i := range entriesToMap {
+		for j := range mappables {
+			mapFn(&entriesToMap[i], &mappables[j])
+		}
+	}
+}
