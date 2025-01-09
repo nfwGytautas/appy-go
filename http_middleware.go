@@ -138,7 +138,7 @@ func (j JwtAuth) ParseAccessToken(c *gin.Context) (AccessTokenInfo, error) {
 	return result, nil
 }
 
-func (j JwtAuth) ParseRefreshToken(c *gin.Context, token string) (RefreshTokenInfo, error) {
+func (j JwtAuth) ParseRefreshToken(token string) (RefreshTokenInfo, error) {
 	result := RefreshTokenInfo{}
 
 	_, claims, err := j.parseToken(token)

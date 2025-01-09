@@ -11,8 +11,20 @@ import (
 	appy_utils "github.com/nfwGytautas/appy-go/utils"
 )
 
-type HttpHandler func(c *gin.Context, context context.Context, transaction *appy_driver.Tx, tracker appy_tracker.Tracker)
-type WsHandler func(c *gin.Context, context context.Context, transaction *appy_driver.Tx, tracker appy_tracker.Tracker) WsFn
+type RequestContext struct {
+	c   *gin.Context
+	Ctx context.Context
+
+	Tx      *appy_driver.Tx
+	Tracker appy_tracker.Tracker
+
+	// Internal
+	status int
+	result any
+}
+
+type HttpHandler func(r *RequestContext)
+type WsHandler func(r *RequestContext) WsFn
 
 type WsFn func(c *gin.Context, context context.Context) error
 
@@ -67,11 +79,21 @@ func AppyHttpBootstrapConfig(handler HttpHandler, config BootstrapConfig) gin.Ha
 		}
 
 		// Handler code
-		handler(c, ctx, tx, tracker)
+		r := &RequestContext{
+			c:       c,
+			Ctx:     ctx,
+			Tx:      tx,
+			Tracker: tracker,
+			status:  0,
+			result:  nil,
+		}
+
+		handler(r)
 
 		if config.Transaction {
-			if c.Writer.Status() >= 400 {
+			if r.status >= 400 {
 				tx.Rollback()
+				r.setGinStatus()
 				return
 			}
 
@@ -82,6 +104,8 @@ func AppyHttpBootstrapConfig(handler HttpHandler, config BootstrapConfig) gin.Ha
 				return
 			}
 		}
+
+		r.setGinStatus()
 	}
 }
 
@@ -115,7 +139,16 @@ func AppyWsBootstrap(handler WsHandler) gin.HandlerFunc {
 		c.Writer = &statusHijacker
 
 		// Handler code
-		socketFn := handler(c, ctx, tx, tracker)
+		r := &RequestContext{
+			c:       c,
+			Ctx:     ctx,
+			Tx:      tx,
+			Tracker: tracker,
+			status:  0,
+			result:  nil,
+		}
+
+		socketFn := handler(r)
 
 		if statusHijacker.statusCode >= 400 || socketFn == nil {
 			tx.Rollback()
@@ -155,4 +188,45 @@ func (sh *statusHijacker) FlushHijack() {
 		sh.ResponseWriter.Write(sh.body)
 		return
 	}
+}
+
+func (r *RequestContext) Status(status int) {
+	r.status = status
+}
+
+func (r *RequestContext) Result(status int, result any) {
+	r.status = status
+	r.result = result
+}
+
+func (r *RequestContext) ParamChain() *ParamChain {
+	return &ParamChain{
+		context:      r.c,
+		currentError: nil,
+	}
+}
+
+func (r *RequestContext) Error(err error) {
+	HTTP().HandleError(r.Ctx, r.c, err)
+}
+
+func (r *RequestContext) Redirect(status int, location string) {
+	r.c.Redirect(status, location)
+}
+
+func (r *RequestContext) StoreMultipartFile(fileKey string, destination string) (string, error) {
+	return storeMultipartFile(r.c, fileKey, destination)
+}
+
+func (r *RequestContext) PostForm(key string) string {
+	return r.c.PostForm(key)
+}
+
+func (r *RequestContext) setGinStatus() {
+	if r.result != nil {
+		r.c.JSON(r.status, r.result)
+		return
+	}
+
+	r.c.Status(r.status)
 }
