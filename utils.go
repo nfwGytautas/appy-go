@@ -48,3 +48,11 @@ func MapEntries[T any, R any](entriesToMap []T, mappables []R, mapFn MapFn[T, R]
 		}
 	}
 }
+
+func CompareCloseEnough(a, b int, window int) bool {
+	if a > b {
+		return a-b <= window
+	}
+
+	return b-a <= window
+}
