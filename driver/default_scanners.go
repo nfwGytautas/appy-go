@@ -20,3 +20,7 @@ func BoolScanner(rr Scannable, entry *bool) error {
 
 	return nil
 }
+
+func StringScanner(rr Scannable, entry *string) error {
+	return rr.Scan(entry)
+}

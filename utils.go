@@ -49,10 +49,14 @@ func MapEntries[T any, R any](entriesToMap []T, mappables []R, mapFn MapFn[T, R]
 	}
 }
 
-func CompareCloseEnough(a, b int, window int) bool {
+func CompareCloseEnough(a, b int64, window int64) bool {
 	if a > b {
 		return a-b <= window
 	}
 
 	return b-a <= window
+}
+
+func JoinArrays[T any](arr []T, element T) []T {
+	return append(arr, element)
 }

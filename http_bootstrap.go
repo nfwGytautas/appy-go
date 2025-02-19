@@ -21,10 +21,14 @@ type RequestContext struct {
 	// Internal
 	status int
 	result any
+
+	postCommits []PostCommitJob
 }
 
 type HttpHandler func(r *RequestContext)
 type WsHandler func(r *RequestContext) WsFn
+
+type PostCommitJob func()
 
 type WsFn func(c *gin.Context, context context.Context) error
 
@@ -103,6 +107,11 @@ func AppyHttpBootstrapConfig(handler HttpHandler, config BootstrapConfig) gin.Ha
 				HTTP().HandleError(ctx, c, err)
 				return
 			}
+		}
+
+		// Post commit jobs
+		for _, job := range r.postCommits {
+			go job()
 		}
 
 		r.setGinStatus()
@@ -229,4 +238,8 @@ func (r *RequestContext) setGinStatus() {
 	}
 
 	r.c.Status(r.status)
+}
+
+func (r *RequestContext) PostCommitJob(job PostCommitJob) {
+	r.postCommits = append(r.postCommits, job)
 }
