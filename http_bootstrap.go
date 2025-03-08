@@ -3,6 +3,7 @@ package appy
 import (
 	"context"
 	"net/http"
+	"runtime"
 
 	"github.com/gin-gonic/gin"
 	appy_driver "github.com/nfwGytautas/appy-go/driver"
@@ -21,6 +22,7 @@ type RequestContext struct {
 	// Internal
 	status int
 	result any
+	err    error
 
 	postCommits []PostCommitJob
 }
@@ -75,7 +77,7 @@ func AppyHttpBootstrapConfig(handler HttpHandler, config BootstrapConfig) gin.Ha
 		if config.Transaction {
 			tx, err = appy_driver.StartTransaction()
 			if err != nil {
-				HTTP().HandleError(ctx, c, err)
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start transaction"})
 				return
 			}
 		} else {
@@ -95,7 +97,7 @@ func AppyHttpBootstrapConfig(handler HttpHandler, config BootstrapConfig) gin.Ha
 		handler(r)
 
 		if config.Transaction {
-			if r.status >= 400 {
+			if r.status >= 400 || r.err != nil {
 				tx.Rollback()
 				r.setGinStatus()
 				return
@@ -104,7 +106,7 @@ func AppyHttpBootstrapConfig(handler HttpHandler, config BootstrapConfig) gin.Ha
 			err = tx.Commit()
 			if err != nil {
 				tx.Rollback()
-				HTTP().HandleError(ctx, c, err)
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit transaction"})
 				return
 			}
 		}
@@ -133,7 +135,7 @@ func AppyWsBootstrap(handler WsHandler) gin.HandlerFunc {
 		// DB Transaction setup
 		tx, err := appy_driver.StartTransaction()
 		if err != nil {
-			HTTP().HandleError(ctx, c, err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start transaction"})
 			return
 		}
 
@@ -159,22 +161,23 @@ func AppyWsBootstrap(handler WsHandler) gin.HandlerFunc {
 
 		socketFn := handler(r)
 
-		if statusHijacker.statusCode >= 400 || socketFn == nil {
+		if statusHijacker.statusCode >= 400 || socketFn == nil || r.err != nil {
 			tx.Rollback()
+			r.setGinStatus()
 			return
 		}
 
 		err = tx.Commit()
 		if err != nil {
 			tx.Rollback()
-			HTTP().HandleError(ctx, c, err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit transaction"})
 			return
 		}
 
 		// Socket code
 		err = socketFn(c, ctx)
 		if err != nil {
-			HTTP().HandleError(ctx, c, err)
+			r.setGinStatus()
 			return
 		}
 	}
@@ -216,7 +219,10 @@ func (r *RequestContext) ParamChain() *ParamChain {
 }
 
 func (r *RequestContext) Error(err error) {
-	HTTP().HandleError(r.Ctx, r.c, err)
+	_, file, line, _ := runtime.Caller(1)
+	appy_logger.Logger().Error("Error while handling request: '%v:%v', error: '%v'", file, line, err)
+
+	r.err = err
 }
 
 func (r *RequestContext) Redirect(status int, location string) {
@@ -232,6 +238,18 @@ func (r *RequestContext) PostForm(key string) string {
 }
 
 func (r *RequestContext) setGinStatus() {
+	if r.err != nil {
+		statusCode, body := HTTP().options.ErrorMapper.Map(r.Ctx, r.err)
+
+		if body != nil {
+			r.c.JSON(statusCode, body)
+		} else {
+			r.c.Status(statusCode)
+		}
+
+		return
+	}
+
 	if r.result != nil {
 		r.c.JSON(r.status, r.result)
 		return

@@ -1,9 +1,6 @@
 package appy
 
 import (
-	"context"
-	"runtime"
-
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	appy_config "github.com/nfwGytautas/appy-go/config"
@@ -45,17 +42,4 @@ func (s *Server) Run() error {
 
 func (s *Server) Root() *gin.RouterGroup {
 	return s.engine.Group("/")
-}
-
-func (s *Server) HandleError(ctx context.Context, c *gin.Context, err error) {
-	_, file, line, _ := runtime.Caller(1)
-	appy_logger.Logger().Error("Error while handling request: '%v:%v', error: '%v'", file, line, err)
-
-	statusCode, body := s.options.ErrorMapper.Map(ctx, err)
-
-	if body != nil {
-		c.JSON(statusCode, body)
-	} else {
-		c.Status(statusCode)
-	}
 }

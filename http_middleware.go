@@ -3,6 +3,7 @@ package appy
 import (
 	"crypto/subtle"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -37,7 +38,7 @@ func (j JwtAuth) Authentication() gin.HandlerFunc {
 		info, err := j.ParseAccessToken(c)
 		if err != nil {
 			c.Abort()
-			HTTP().HandleError(c.Request.Context(), c, err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse access token"})
 			return
 		}
 
@@ -53,14 +54,14 @@ func (j JwtAuth) Authorization(roles []string) gin.HandlerFunc {
 		info, err := j.ParseAccessToken(c)
 		if err != nil {
 			c.Abort()
-			HTTP().HandleError(c.Request.Context(), c, err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse access token"})
 			return
 		}
 
 		// Authorize
 		if !isElementInArray(roles, info.Role) {
 			c.Abort()
-			HTTP().HandleError(c.Request.Context(), c, ErrInsufficientPermissions)
+			c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient permissions"})
 			return
 		}
 
@@ -217,13 +218,13 @@ func (akmp ApiKeyMiddlewareProvider) Provide() gin.HandlerFunc {
 		token := c.GetHeader("Authorization")
 		if token == "" {
 			c.Abort()
-			HTTP().HandleError(c.Request.Context(), c, ErrAuthorizationHeaderMissing)
+			c.JSON(akmp.failStatusCode, gin.H{"error": "Authorization header missing"})
 			return
 		}
 
 		if subtle.ConstantTimeCompare([]byte(token), []byte(akmp.apiKey)) == 0 {
 			c.Abort()
-			HTTP().HandleError(c.Request.Context(), c, ErrApiKeysDontMatch)
+			c.JSON(akmp.failStatusCode, gin.H{"error": "Api keys don't match"})
 			return
 		}
 
