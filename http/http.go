@@ -1,33 +1,44 @@
-package appy
+package appy_http
 
 import (
+	"context"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	appy_config "github.com/nfwGytautas/appy-go/config"
 	appy_logger "github.com/nfwGytautas/appy-go/logger"
 )
 
-var server *Server
-
-func InitializeHTTP(options appy_config.HttpConfig) error {
-	e := gin.Default()
-	e.Use(cors.Default())
-
-	server = &Server{
-		engine:  e,
-		options: options,
-	}
-
-	return nil
+// SSL settings
+type SSLSettings struct {
+	CertFile string
+	KeyFile  string
 }
 
-func HTTP() *Server {
-	return server
+// HTTP server config
+type HttpConfig struct {
+	Address string
+	SSL     *SSLSettings
+
+	ErrorMapper HttpErrorMapper
+}
+
+type HttpErrorMapper interface {
+	Map(context.Context, error) (int, any)
 }
 
 type Server struct {
 	engine  *gin.Engine
-	options appy_config.HttpConfig
+	options *HttpConfig
+}
+
+func InitializeHTTP(options *HttpConfig) (*Server, error) {
+	e := gin.Default()
+	e.Use(cors.Default())
+
+	return &Server{
+		engine:  e,
+		options: options,
+	}, nil
 }
 
 func (s *Server) Run() error {

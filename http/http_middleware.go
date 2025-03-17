@@ -1,4 +1,4 @@
-package appy
+package appy_http
 
 import (
 	"crypto/subtle"
@@ -10,6 +10,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	appy_utils "github.com/nfwGytautas/appy-go/utils"
 )
 
 // Struct for containing token info
@@ -59,7 +60,7 @@ func (j JwtAuth) Authorization(roles []string) gin.HandlerFunc {
 		}
 
 		// Authorize
-		if !isElementInArray(roles, info.Role) {
+		if !appy_utils.InArray(info.Role, roles) {
 			c.Abort()
 			c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient permissions"})
 			return

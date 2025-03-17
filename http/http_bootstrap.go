@@ -1,4 +1,4 @@
-package appy
+package appy_http
 
 import (
 	"context"
@@ -13,8 +13,9 @@ import (
 )
 
 type RequestContext struct {
-	c   *gin.Context
-	Ctx context.Context
+	server *Server
+	c      *gin.Context
+	Ctx    context.Context
 
 	Tx      *appy_driver.Tx
 	Tracker appy_tracker.Tracker
@@ -45,14 +46,14 @@ type BootstrapConfig struct {
 	Transaction bool
 }
 
-func AppyHttpBootstrap(handler HttpHandler) gin.HandlerFunc {
-	return AppyHttpBootstrapConfig(handler, BootstrapConfig{
+func (s *Server) Handle(handler HttpHandler) gin.HandlerFunc {
+	return s.HandleConfig(handler, BootstrapConfig{
 		Tracked:     true,
 		Transaction: true,
 	})
 }
 
-func AppyHttpBootstrapConfig(handler HttpHandler, config BootstrapConfig) gin.HandlerFunc {
+func (s *Server) HandleConfig(handler HttpHandler, config BootstrapConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var err error
 		var tracker appy_tracker.Tracker
@@ -87,6 +88,7 @@ func AppyHttpBootstrapConfig(handler HttpHandler, config BootstrapConfig) gin.Ha
 		// Handler code
 		r := &RequestContext{
 			c:       c,
+			server:  s,
 			Ctx:     ctx,
 			Tx:      tx,
 			Tracker: tracker,
@@ -120,7 +122,7 @@ func AppyHttpBootstrapConfig(handler HttpHandler, config BootstrapConfig) gin.Ha
 	}
 }
 
-func AppyWsBootstrap(handler WsHandler) gin.HandlerFunc {
+func (s *Server) Ws(handler WsHandler) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Debug
 		currentFunctionName := appy_utils.ReflectFunctionName(handler)
@@ -152,6 +154,7 @@ func AppyWsBootstrap(handler WsHandler) gin.HandlerFunc {
 		// Handler code
 		r := &RequestContext{
 			c:       c,
+			server:  s,
 			Ctx:     ctx,
 			Tx:      tx,
 			Tracker: tracker,
@@ -239,7 +242,7 @@ func (r *RequestContext) PostForm(key string) string {
 
 func (r *RequestContext) setGinStatus() {
 	if r.err != nil {
-		statusCode, body := HTTP().options.ErrorMapper.Map(r.Ctx, r.err)
+		statusCode, body := r.server.options.ErrorMapper.Map(r.Ctx, r.err)
 
 		if body != nil {
 			r.c.JSON(statusCode, body)
