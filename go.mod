@@ -1,6 +1,6 @@
 module github.com/nfwGytautas/appy-go
 
-go 1.20
+go 1.23
 
 require (
 	firebase.google.com/go/v4 v4.14.1

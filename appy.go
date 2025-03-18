@@ -1,53 +1,76 @@
 package appy
 
 import (
+	"errors"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
+	appy_firebase "github.com/nfwGytautas/appy-go/firebase"
 	appy_http "github.com/nfwGytautas/appy-go/http"
 	appy_jobs "github.com/nfwGytautas/appy-go/jobs"
 	appy_logger "github.com/nfwGytautas/appy-go/logger"
+	appy_mail "github.com/nfwGytautas/appy-go/mail"
 	appy_tracker "github.com/nfwGytautas/appy-go/tracker"
 	appy_utils "github.com/nfwGytautas/appy-go/utils"
 )
 
-type Appy struct {
+type App struct {
 	scheduler  *appy_jobs.JobScheduler
 	httpServer *appy_http.Server
 
 	opts AppOpts
 }
 
-type RegisterEndpointsFn func(app *Appy) error
+type ControllersSetupFn func(app *App) error
+type EndpointsSetupFn func(app *App) error
+type DatabaseSetupFn func(app *App) error
+type JobsSetupFn func(app *App) error
+
+type ConfigureFn func() *ModuleOpts
 
 type AppOpts struct {
-	Version     string
-	Controllers []Controller
+	Version string
 
-	RegisterEndpoints RegisterEndpointsFn
+	Controllers ControllersSetupFn
+	Endpoints   EndpointsSetupFn
+	Database    DatabaseSetupFn
+	Jobs        JobsSetupFn
+
+	Configure ConfigureFn
+}
+
+type ModuleOpts struct {
+	Scheduler *appy_jobs.JobSchedulerOptions
+	Tracker   *appy_tracker.TrackerOptions
+	Mail      *appy_mail.MailerLiteOptions
+	Firebase  *appy_firebase.FirebaseServicesOptions
 }
 
 // Create new appy app
-func NewApp(opts AppOpts) *Appy {
-	return &Appy{
+func Go(opts AppOpts) {
+	app := &App{
 		opts: opts,
 	}
+
+	err := app.Initialize()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	app.Run()
 }
 
-func (a *Appy) Initialize() error {
+func (a *App) Initialize() error {
+	if a.opts.Configure == nil {
+		return errors.New("configure hook not set")
+	}
+
 	appy_logger.Logger().Info("Initializing appy-go")
 
 	// Set some environment variables
 	os.Setenv("VERSION", a.opts.Version)
-
-	err := appy_jobs.Initialize(appy_jobs.JobSchedulerOptions{})
-	if err != nil {
-		return err
-	}
-
-	// TODO: Remove global access
-	a.scheduler = appy_jobs.Get()
 
 	// Load environment variables if any
 	if appy_utils.FsFileExists(".env") {
@@ -58,14 +81,65 @@ func (a *Appy) Initialize() error {
 		}
 	}
 
-	// Controllers
-	for _, controller := range a.opts.Controllers {
-		controller.SetupJobs(a.scheduler)
+	moduleSettings := a.opts.Configure()
+
+	// Initialize modules
+	if moduleSettings.Scheduler != nil {
+		err := appy_jobs.Initialize(*moduleSettings.Scheduler)
+		if err != nil {
+			return err
+		}
+	}
+
+	if moduleSettings.Tracker != nil {
+		err := appy_tracker.Initialize(*moduleSettings.Tracker)
+		if err != nil {
+			return err
+		}
+	}
+
+	if moduleSettings.Mail != nil {
+		err := appy_mail.Mailerlite().Configure(*moduleSettings.Mail)
+		if err != nil {
+			return err
+		}
+	}
+
+	if moduleSettings.Firebase != nil {
+		err := appy_firebase.Firebase().Configure(*moduleSettings.Firebase)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Register endpoints
-	if a.opts.RegisterEndpoints != nil {
-		err := a.opts.RegisterEndpoints(a)
+	if a.opts.Endpoints != nil {
+		appy_logger.Logger().Debug("Running endpoint hook")
+		err := a.opts.Endpoints(a)
+		if err != nil {
+			return err
+		}
+	}
+
+	if a.opts.Database != nil {
+		appy_logger.Logger().Debug("Running database hook")
+		err := a.opts.Database(a)
+		if err != nil {
+			return err
+		}
+	}
+
+	if a.opts.Controllers != nil {
+		appy_logger.Logger().Debug("Running controllers hook")
+		err := a.opts.Controllers(a)
+		if err != nil {
+			return err
+		}
+	}
+
+	if a.opts.Jobs != nil {
+		appy_logger.Logger().Debug("Running jobs hook")
+		err := a.opts.Jobs(a)
 		if err != nil {
 			return err
 		}
@@ -74,7 +148,7 @@ func (a *Appy) Initialize() error {
 	return nil
 }
 
-func (a *Appy) Run() {
+func (a *App) Run() {
 	appy_logger.Logger().Info("Starting app, version: '%s'", a.opts.Version)
 
 	// CLI Override
@@ -101,11 +175,11 @@ func (a *Appy) Run() {
 	}
 }
 
-func (a *Appy) SetHttpServer(server *appy_http.Server) {
+func (a *App) SetHttpServer(server *appy_http.Server) {
 	a.httpServer = server
 }
 
-func (a *Appy) handleCLI() {
+func (a *App) handleCLI() {
 
 }
 

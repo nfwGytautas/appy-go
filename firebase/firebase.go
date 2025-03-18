@@ -1,4 +1,4 @@
-package appy
+package appy_firebase
 
 import (
 	"context"
@@ -11,11 +11,13 @@ import (
 	"google.golang.org/api/option"
 )
 
-const cFirebaseAuthEnvironmentKey = "FIREBASE_SERVICE_FILE"
 const cFirebaseConnectionTimeout = 5 * time.Second
 
 // FirebaseOptions are options for configuring the firebase connection
 type FirebaseServicesOptions struct {
+	// Path to the auth key file
+	AuthKey string
+
 	// If true then messaging service (used for push notifications) will be configured
 	PushNotifications bool
 
@@ -41,12 +43,7 @@ func Firebase() *firebaseWrapper {
 // Configure firebase connection
 func (fw *firebaseWrapper) Configure(opts FirebaseServicesOptions) error {
 	// Get the auth key and decode it
-	authKey, err := Environment().GetValue(cFirebaseAuthEnvironmentKey)
-	if err != nil {
-		return err
-	}
-
-	decodedKey, err := os.ReadFile(authKey)
+	decodedKey, err := os.ReadFile(opts.AuthKey)
 	if err != nil {
 		return err
 	}
