@@ -1,14 +1,16 @@
-package appy
+package appy_http
 
 import (
 	"crypto/subtle"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	appy_utils "github.com/nfwGytautas/appy-go/utils"
 )
 
 // Struct for containing token info
@@ -37,7 +39,7 @@ func (j JwtAuth) Authentication() gin.HandlerFunc {
 		info, err := j.ParseAccessToken(c)
 		if err != nil {
 			c.Abort()
-			HTTP().HandleError(c.Request.Context(), c, err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse access token"})
 			return
 		}
 
@@ -53,14 +55,14 @@ func (j JwtAuth) Authorization(roles []string) gin.HandlerFunc {
 		info, err := j.ParseAccessToken(c)
 		if err != nil {
 			c.Abort()
-			HTTP().HandleError(c.Request.Context(), c, err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse access token"})
 			return
 		}
 
 		// Authorize
-		if !isElementInArray(roles, info.Role) {
+		if !appy_utils.InArray(info.Role, roles) {
 			c.Abort()
-			HTTP().HandleError(c.Request.Context(), c, ErrInsufficientPermissions)
+			c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient permissions"})
 			return
 		}
 
@@ -138,7 +140,7 @@ func (j JwtAuth) ParseAccessToken(c *gin.Context) (AccessTokenInfo, error) {
 	return result, nil
 }
 
-func (j JwtAuth) ParseRefreshToken(c *gin.Context, token string) (RefreshTokenInfo, error) {
+func (j JwtAuth) ParseRefreshToken(token string) (RefreshTokenInfo, error) {
 	result := RefreshTokenInfo{}
 
 	_, claims, err := j.parseToken(token)
@@ -217,13 +219,13 @@ func (akmp ApiKeyMiddlewareProvider) Provide() gin.HandlerFunc {
 		token := c.GetHeader("Authorization")
 		if token == "" {
 			c.Abort()
-			HTTP().HandleError(c.Request.Context(), c, ErrAuthorizationHeaderMissing)
+			c.JSON(akmp.failStatusCode, gin.H{"error": "Authorization header missing"})
 			return
 		}
 
 		if subtle.ConstantTimeCompare([]byte(token), []byte(akmp.apiKey)) == 0 {
 			c.Abort()
-			HTTP().HandleError(c.Request.Context(), c, ErrApiKeysDontMatch)
+			c.JSON(akmp.failStatusCode, gin.H{"error": "Api keys don't match"})
 			return
 		}
 

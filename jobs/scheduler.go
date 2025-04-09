@@ -4,6 +4,8 @@ import (
 	"sync"
 	"time"
 
+	appy_logger "github.com/nfwGytautas/appy-go/logger"
+	appy_utils "github.com/nfwGytautas/appy-go/utils"
 	"github.com/robfig/cron/v3"
 )
 
@@ -50,12 +52,25 @@ func (n *JobScheduler) Start() {
 
 	for _, job := range n.jobs {
 		go func(job jobEntry) {
+			prevFinished := true
+			jobName := appy_utils.ReflectFunctionName(job.job)
 			for {
 				select {
 				case <-n.stop:
 					return
 				case <-time.After(job.tick):
+					if !prevFinished {
+						// Skip
+						appy_logger.Logger().Warn("Job overrun %s, skipping", jobName)
+						continue
+					}
+
+					prevFinished = false
+					start := time.Now()
 					job.job()
+					elapsed := time.Since(start)
+					appy_logger.Logger().Info("Job %s took: '%v'", jobName, elapsed)
+					prevFinished = true
 				}
 			}
 		}(job)

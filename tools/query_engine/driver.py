@@ -145,7 +145,6 @@ class DatabaseDriver:
             f.write("import (\n")
             f.write('\t"database/sql"\n')
             f.write('\t"github.com/jackc/pgx/v5/pgtype"\n')
-            f.write('\t"github.com/nfwGytautas/appy-go/driver"\n')
             f.write('\tappy_driver "github.com/nfwGytautas/appy-go/driver"\n')
             f.write('\tappy_logger "github.com/nfwGytautas/appy-go/logger"\n')
             f.write(")\n\n")

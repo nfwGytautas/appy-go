@@ -1,4 +1,4 @@
-package appy
+package appy_mail
 
 import (
 	"context"

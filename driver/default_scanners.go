@@ -5,18 +5,13 @@ func IDScanner(rr Scannable, entry *uint64) error {
 }
 
 func BoolScanner(rr Scannable, entry *bool) error {
-	var i int
+	return rr.Scan(entry)
+}
 
-	err := rr.Scan(&i)
-	if err != nil {
-		return err
-	}
+func IntScanner(rr Scannable, entry *int) error {
+	return rr.Scan(entry)
+}
 
-	if i == 0 {
-		*entry = false
-	} else {
-		*entry = true
-	}
-
-	return nil
+func StringScanner(rr Scannable, entry *string) error {
+	return rr.Scan(entry)
 }

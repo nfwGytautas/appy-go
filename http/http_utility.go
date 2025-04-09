@@ -1,4 +1,4 @@
-package appy
+package appy_http
 
 import (
 	"encoding/json"
@@ -24,8 +24,7 @@ const PageSize = 20
 
 // Utility struct for getting required handler parameters
 type ParamChain struct {
-	Context *gin.Context
-
+	context      *gin.Context
 	currentError error
 }
 
@@ -38,16 +37,12 @@ func (ps PagingSettings) String() string {
 	return fmt.Sprintf("{Offset: %v, Count: %v}", ps.Offset, ps.Count)
 }
 
-func NewParamChain(context *gin.Context) *ParamChain {
-	return &ParamChain{Context: context, currentError: nil}
-}
-
 func (pc *ParamChain) GetUser(outId *uint64, outName *string) *ParamChain {
 	if pc.currentError != nil {
 		return pc
 	}
 
-	token, exists := pc.Context.Get("accessToken")
+	token, exists := pc.context.Get("accessToken")
 	if !exists {
 		panic("accesToken not found in context")
 	}
@@ -65,7 +60,7 @@ func (pc *ParamChain) GetPage(out *PagingSettings) *ParamChain {
 		return pc
 	}
 
-	pageString := pc.Context.Query("page")
+	pageString := pc.context.Query("page")
 	if pageString == "" {
 		*out = PagingSettings{
 			Count:  PageSize,
@@ -93,7 +88,7 @@ func (pc *ParamChain) GetPageSized(out *PagingSettings, size uint64) *ParamChain
 		return pc
 	}
 
-	pageString := pc.Context.Query("page")
+	pageString := pc.context.Query("page")
 	if pageString == "" {
 		*out = PagingSettings{
 			Count:  size,
@@ -121,7 +116,7 @@ func (pc *ParamChain) ReadBodySingle(out any) *ParamChain {
 		return pc
 	}
 
-	body, err := io.ReadAll(pc.Context.Request.Body)
+	body, err := io.ReadAll(pc.context.Request.Body)
 	if err != nil {
 		pc.currentError = err
 		return pc
@@ -147,7 +142,7 @@ func (pc *ParamChain) ReadBodyArray(out any) *ParamChain {
 		return pc
 	}
 
-	body, err := io.ReadAll(pc.Context.Request.Body)
+	body, err := io.ReadAll(pc.context.Request.Body)
 	if err != nil {
 		pc.currentError = err
 		return pc
@@ -178,7 +173,7 @@ func (pc *ParamChain) ReadPathInt(name string, out *uint64) *ParamChain {
 		return pc
 	}
 
-	valueStr := pc.Context.Param(name)
+	valueStr := pc.context.Param(name)
 	if valueStr == "" {
 		pc.currentError = errors.New("missing parameter: " + name)
 		return pc
@@ -200,7 +195,7 @@ func (pc *ParamChain) ReadQueryInt(name string, out *uint64) *ParamChain {
 		return pc
 	}
 
-	valueStr := pc.Context.Query(name)
+	valueStr := pc.context.Query(name)
 	if valueStr == "" {
 		pc.currentError = errors.New("missing parameter: " + name)
 		return pc
@@ -217,12 +212,46 @@ func (pc *ParamChain) ReadQueryInt(name string, out *uint64) *ParamChain {
 	return pc
 }
 
+func (pc *ParamChain) ReadOptionalQueryInt(name string, out **uint64) *ParamChain {
+	if pc.currentError != nil {
+		return pc
+	}
+
+	valueStr := pc.context.Query(name)
+	if valueStr == "" {
+		*out = nil
+		return pc
+	}
+
+	numericalValue, err := strconv.Atoi(valueStr)
+	if err != nil {
+		pc.currentError = err
+		return pc
+	}
+
+	value := uint64(numericalValue)
+	*out = &value
+
+	return pc
+}
+
+func (pc *ParamChain) ReadOptionalQueryString(name string, out *string) *ParamChain {
+	if pc.currentError != nil {
+		return pc
+	}
+
+	valueStr := pc.context.Query(name)
+	*out = valueStr
+
+	return pc
+}
+
 func (pc *ParamChain) ReadQueryString(name string, out *string) *ParamChain {
 	if pc.currentError != nil {
 		return pc
 	}
 
-	valueStr := pc.Context.Query(name)
+	valueStr := pc.context.Query(name)
 	if valueStr == "" {
 		pc.currentError = errors.New("missing parameter: " + name)
 		return pc
@@ -238,7 +267,7 @@ func (pc *ParamChain) ReadQueryTime(name string, out *time.Time) *ParamChain {
 		return pc
 	}
 
-	valueStr := pc.Context.Query(name)
+	valueStr := pc.context.Query(name)
 	if valueStr == "" {
 		pc.currentError = errors.New("missing parameter: " + name)
 		return pc
@@ -263,7 +292,7 @@ func (p *ParamChain) Error() error {
 	return p.currentError
 }
 
-func StoreMultipartFile(c *gin.Context, key string, outDir string) (string, error) {
+func storeMultipartFile(c *gin.Context, key string, outDir string) (string, error) {
 	file, header, err := c.Request.FormFile(key)
 	if err != nil {
 		return "", err
