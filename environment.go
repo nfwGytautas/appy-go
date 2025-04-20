@@ -33,6 +33,20 @@ func (es *EnvironmentSettings) LoadFromFile(file string) error {
 	return nil
 }
 
+func (es *EnvironmentSettings) LoadIfExists(file string) error {
+	_, err := os.Stat(file)
+	if err != nil {
+		return err
+	}
+
+	err = es.LoadFromFile(file)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (es *EnvironmentSettings) GetValue(key string) (string, error) {
 	val := os.Getenv(key)
 
