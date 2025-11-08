@@ -284,6 +284,26 @@ func (pc *ParamChain) ReadQueryTime(name string, out *time.Time) *ParamChain {
 	return pc
 }
 
+func (pc *ParamChain) ReadBodyRaw(out *[]byte) *ParamChain {
+	if pc.currentError != nil {
+		return pc
+	}
+
+	*out, pc.currentError = io.ReadAll(pc.context.Request.Body)
+
+	return pc
+}
+
+func (pc *ParamChain) GetHeader(name string, out *string) *ParamChain {
+	if pc.currentError != nil {
+		return pc
+	}
+
+	*out = pc.context.GetHeader(name)
+
+	return pc
+}
+
 func (p *ParamChain) HasError() bool {
 	return p.currentError != nil
 }
